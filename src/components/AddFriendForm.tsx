@@ -1,6 +1,6 @@
 import React, { ChangeEvent } from 'react';
-import { motion } from 'framer-motion';
-import { UserPlus, Trash } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { UserPlus, Trash, Upload } from 'lucide-react';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import Input from '../components/ui/input';
@@ -46,57 +46,119 @@ const AddFriendForm: React.FC<AddFriendFormProps> = ({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="p-4 bg-white rounded-lg shadow-md"
+      transition={{ duration: 0.6, ease: "easeOut" }}
+      className="p-6 bg-white rounded-xl shadow-lg mx-auto"
     >
-      <h2 className="text-xl font-bold mb-4 flex items-center">
-        <UserPlus className="mr-2" /> Ajouter des Amis
+      <h2 className="text-2xl font-bold mb-6 flex items-center text-gray-800">
+        <UserPlus className="mr-3 text-blue-500" /> 
+        <span>Ajouter des Amis</span>
       </h2>
-      <div className="mb-4">
-        <Input
-          type="text"
-          value={currentFriend}
-          onChange={(e) => setCurrentFriend(e.target.value)}
-          placeholder="Nom de l'ami"
-          className="mb-2"
-        />
-        <Input type="file" onChange={handleAvatarChange} className="mb-2" />
-        {currentAvatar && (
-          <div className="mb-2">
-            <img
-              src={URL.createObjectURL(currentAvatar)}
-              alt="Aperçu Avatar"
-              className="w-20 h-20 rounded-full object-cover"
+      
+      <div className="space-y-4">
+        <div className="relative">
+          <Input
+            type="text"
+            value={currentFriend}
+            onChange={(e) => setCurrentFriend(e.target.value)}
+            placeholder="Nom de l'ami"
+            className="w-full pl-4 pr-4 py-2 rounded-lg border-2 focus:border-blue-500"
+          />
+          {currentFriend && (
+            <small className="text-gray-500 mt-1">
+              Appuyez sur "Ajouter" ou Entrée pour valider
+            </small>
+          )}
+        </div>
+
+        <div className="relative">
+          <label className="flex flex-col items-center p-4 border-2 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+            <Upload className="h-8 w-8 text-gray-400 mb-2" />
+            <span className="text-sm text-gray-500">Choisir un avatar</span>
+            <Input 
+              type="file" 
+              onChange={handleAvatarChange} 
+              className="hidden"
+              accept="image/*"
             />
-          </div>
-        )}
-        <Button onClick={handleAddFriend} className="mt-2 flex items-center justify-center">
+          </label>
+          
+          <AnimatePresence>
+            {currentAvatar && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                className="mt-3 flex justify-center"
+              >
+                <img
+                  src={URL.createObjectURL(currentAvatar)}
+                  alt="Aperçu Avatar"
+                  className="w-24 h-24 rounded-full object-cover ring-2 ring-blue-500"
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        <Button 
+          onClick={handleAddFriend}
+          className="w-full bg-blue-500 hover:bg-blue-600 text-white transition-colors py-2 rounded-lg flex items-center justify-center"
+        >
           <UserPlus className="mr-2" /> Ajouter
         </Button>
       </div>
-      <ul className="mb-4 space-y-2">
-        {friends.map((friend) => (
-          <li key={friend.id} className="flex justify-between items-center mb-2 p-2 bg-gray-100 rounded-lg shadow-sm">
-            <div className="flex items-center space-x-4">
-              {friend.avatar ? (
-                <img src={friend.avatar} alt={friend.name} className="w-10 h-10 rounded-full object-cover" />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-white">
-                  {friend.name.charAt(0).toUpperCase()}
+
+      <AnimatePresence>
+        {friends.length > 0 && (
+          <motion.ul
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="mt-6 space-y-3"
+          >
+            {friends.map((friend) => (
+              <motion.li
+                key={friend.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <div className="flex items-center space-x-4">
+                  {friend.avatar ? (
+                    <img src={friend.avatar} alt={friend.name} className="w-12 h-12 rounded-full object-cover ring-2 ring-gray-200" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
+                      {friend.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <span className="font-medium">{friend.name}</span>
                 </div>
-              )}
-              <span>{friend.name}</span>
-            </div>
-            <Button onClick={() => removeFriend(friend.id)} variant="outline" className="flex items-center justify-center">
-              <Trash className="mr-2" /> Supprimer
-            </Button>
-          </li>
-        ))}
-      </ul>
+                <Button
+                  onClick={() => removeFriend(friend.id)}
+                  variant="outline"
+                  className="text-red-500 hover:bg-red-50 p-2 rounded-full"
+                >
+                  <Trash className="h-5 w-5" />
+                </Button>
+              </motion.li>
+            ))}
+          </motion.ul>
+        )}
+      </AnimatePresence>
+
       {friends.length > 0 && (
-        <Button onClick={startQuestionnaire} className="mt-4 flex items-center justify-center">
-          Commencer le Questionnaire
-        </Button>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="mt-6"
+        >
+          <Button 
+            onClick={startQuestionnaire}
+            className="w-full bg-green-500 hover:bg-green-600 text-white transition-colors py-3 rounded-lg text-lg font-semibold"
+          >
+            Commencer le Questionnaire
+          </Button>
+        </motion.div>
       )}
     </motion.div>
   );

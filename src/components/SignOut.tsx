@@ -14,8 +14,8 @@ const SignOut: React.FC<SignOutProps> = ({ className }) => {
   };
 
   return (
-    <Button onClick={handleSignOut} className={`flex items-center justify-center bg-white text-blue-700 hover:bg-gray-200 ${className}`}>
-      <LogOut className="w-5 h-5" />
+    <Button onClick={handleSignOut} className={`flex items-center justify-center bg-red-500 text-white hover:bg-red-700 ${className}`}>
+      <LogOut className="w-5 h-5 text-white" />
     </Button>
   );
 };
