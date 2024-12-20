@@ -1,0 +1,46 @@
+import React, { useState } from 'react';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../firebaseConfig';
+import Button from '../components/ui/button';
+import Input from '../components/ui/input';
+
+const SignIn: React.FC = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const handleSignIn = async () => {
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      setEmail('');
+      setPassword('');
+      setError('');
+    } catch (error) {
+      setError((error as Error).message);
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center">
+      <h2 className="text-2xl font-bold mb-4">Se connecter</h2>
+      {error && <p className="text-red-500 mb-4">{error}</p>}
+      <Input
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="Email"
+        className="mb-2"
+      />
+      <Input
+        type="password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        placeholder="Mot de passe"
+        className="mb-4"
+      />
+      <Button onClick={handleSignIn}>Se connecter</Button>
+    </div>
+  );
+};
+
+export default SignIn;
