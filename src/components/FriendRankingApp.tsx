@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, ChangeEvent } from 'react';
+import { useRouter } from 'next/router';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../firebaseConfig';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
@@ -42,6 +43,7 @@ interface Ranking {
 }
 
 const FriendRankingApp = () => {
+  const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [friends, setFriends] = useState<Friend[]>([]);
   const [currentFriend, setCurrentFriend] = useState('');
@@ -53,6 +55,8 @@ const FriendRankingApp = () => {
   const [usedQuestions, setUsedQuestions] = useState<{ [traitId: string]: Set<number> }>({});
   const [currentQuestion, setCurrentQuestion] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [questionsAnswered, setQuestionsAnswered] = useState(0);
+  const totalQuestions = friends.length * personalityTraits.length;
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -124,6 +128,7 @@ const FriendRankingApp = () => {
     setFriendRatings({});
     setFinalRankings(null);
     setUsedQuestions({});
+    setQuestionsAnswered(0); // Ajout de cette ligne
   };
 
   const restartWithSameFriends = () => {
@@ -131,6 +136,7 @@ const FriendRankingApp = () => {
     setFriendRatings({});
     setFinalRankings(null);
     setUsedQuestions({});
+    setQuestionsAnswered(0); // Ajout de cette ligne
   };
 
   const handleRating = (traitId: string, friendId: string, rating: number) => {
@@ -141,16 +147,12 @@ const FriendRankingApp = () => {
         [friendId]: rating
       }
     }));
+    setQuestionsAnswered(prev => prev + 1);
   };
 
   const renderContent = () => {
     if (!user) {
-      return (
-        <div className="flex flex-col items-center">
-          <SignUp />
-          <SignIn />
-        </div>
-      );
+      return null; // Au lieu d'utiliser Navigate, on utilise l'effet ci-dessus
     }
 
     if (showHistory) {
@@ -177,7 +179,7 @@ const FriendRankingApp = () => {
       );
     } else if (currentTraitIndex !== null && personalityTraits[currentTraitIndex]) {
       const trait = personalityTraits[currentTraitIndex];
-      const progress = ((currentTraitIndex + 1) / personalityTraits.length) * 100;
+      const progress = (questionsAnswered / totalQuestions) * 100;
 
       return (
         <Questionnaire
@@ -227,11 +229,14 @@ const FriendRankingApp = () => {
   return (
     <div className="min-h-screen min-w-full flex items-center justify-center bg-gradient-to-r from-blue-500 to-purple-600 p-4">
       <Card className="w-full max-w-2xl shadow-2xl">
-        <CardHeader className="bg-gradient-to-r from-blue-700 to-purple-700 text-white p-6 rounded-t-lg flex items-center">
-          <CardTitle className="text-3xl flex items-center flex-grow">
-            <Users className="mr-2" /> Classement de mes Amis
-          </CardTitle>
-          {user && <SignOut className="ml-auto" />}
+        <CardHeader className="bg-gradient-to-r from-blue-700 to-purple-700 text-white p-6 rounded-t-lg flex items-center justify-between">
+          <div className="flex items-center">
+            <Users className="mr-2" />
+            <CardTitle className="text-3xl">
+              Classement de mes Amis
+            </CardTitle>
+          </div>
+          {user && <SignOut className="ml-auto" />} {/* Utilisation de ml-auto pour aligner à droite */}
         </CardHeader>
         <CardContent className="p-8">
           {renderContent()}
