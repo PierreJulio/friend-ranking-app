@@ -35,7 +35,7 @@ const Card: React.FC<CardProps> = ({ children, className = '' }) => {
 
 const CardHeader: React.FC<CardHeaderProps> = ({ children, className = '' }) => {
   return (
-    <div className={`flex flex-col space-y-1.5 p-6 ${className}`}>
+    <div className={`flex flex-row space-y-1.5 p-6 ${className}`}>
       {children}
     </div>
   );
