@@ -14,12 +14,15 @@ interface GroupedRankings {
   [key: string]: HistoryItem[];
 }
 
+interface FinalRank {
+  rank: number;
+  friend: string;
+  averageScore: string;
+}
+
 interface HistoryItem {
   id: string;
-  finalRankings: {
-    friend: string;
-    averageScore: string;
-  }[];
+  finalRankings: FinalRank[];
   timestamp: Date;
 }
 
@@ -123,7 +126,7 @@ const RankingHistory: React.FC<RankingHistoryProps> = ({ userId, onClose }) => {
         </div>
         <div className="text-center py-8">
           <p className="text-gray-500 text-lg">
-            Vous n'avez pas encore créé de classement.
+            Vous n&apos;avez pas encore créé de classement.
           </p>
           <p className="text-gray-400 mt-2">
             Commencez par créer votre premier classement !
@@ -166,7 +169,7 @@ const RankingHistory: React.FC<RankingHistoryProps> = ({ userId, onClose }) => {
             </h3>
             
             <div className="space-y-4 pl-4">
-              {rankings.map((ranking, index) => (
+              {rankings.map((ranking) => (
                 <motion.div
                   key={ranking.id}
                   initial={false}
@@ -205,7 +208,7 @@ const RankingHistory: React.FC<RankingHistoryProps> = ({ userId, onClose }) => {
                       transition={{ duration: 0.2 }}
                       className="mt-4 space-y-3"
                     >
-                      {ranking.finalRankings.map((rank: any) => (
+                      {ranking.finalRankings.map((rank: FinalRank) => (
                         <motion.div
                           key={rank.friend}
                           initial={{ opacity: 0 }}

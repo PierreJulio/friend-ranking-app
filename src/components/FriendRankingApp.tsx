@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { auth } from '../firebaseConfig';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import AddFriendForm from './AddFriendForm';
@@ -39,15 +39,15 @@ interface Ranking {
 }
 
 const saveProgress = (
-  userId: string,
-  friends: Friend[],
-  usedQuestions: string[]
+  _userId: string,
+  _friends: Friend[],
+  _usedQuestions: string[]
 ) => {
   // ...existing code...
 };
 
 const FriendRankingApp = () => {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<FirebaseUser | null>(null);
   const [friends, setFriends] = useState<Friend[]>([]);
   const [currentFriend, setCurrentFriend] = useState('');
   const [currentAvatar, setCurrentAvatar] = useState<File | null>(null);
@@ -70,7 +70,7 @@ const FriendRankingApp = () => {
   }, []);
 
   useEffect(() => {
-    if (currentTraitIndex !== null && personalityTraits[currentTraitIndex]) {
+    if (currentTraitIndex !== null && personalityTraits[currentTraitIndex] && user) {
       const nextFriend = selectNextFriendToRate(
         friends,
         friendRatings,
@@ -94,13 +94,13 @@ const FriendRankingApp = () => {
         }
       }
     }
-  }, [currentTraitIndex, friendRatings]);
+  }, [currentTraitIndex, friendRatings, user]);
 
   useEffect(() => {
-    if (user?.uid && friends.length > 0) {
+    if (user && user.uid && friends.length > 0) {
       saveProgress(user.uid, friends, Object.keys(usedQuestions));
     }
-  }, [friends, usedQuestions, user?.uid, currentQuestion]);
+  }, [user, friends, usedQuestions, currentQuestion]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
