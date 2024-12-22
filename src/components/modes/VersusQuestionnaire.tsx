@@ -30,83 +30,121 @@ const VersusQuestionnaire: React.FC<VersusQuestionnaireProps> = ({
   currentTraitIndex,
   totalTraits,
 }) => {
-  const [currentQuestion, setCurrentQuestion] = useState<string>('');
-  const progress = ((currentTraitIndex + 1) / totalTraits) * 100;
+  const [questionIndex, setQuestionIndex] = useState<number>(0);
+  const [currentQuestions, setCurrentQuestions] = useState<string[]>([]);
+  const [scores, setScores] = useState<{ [key: string]: number }>({});
+  const [selectedWinner, setSelectedWinner] = useState<string | null>(null);
+  const questionsPerTrait = 3;
+  
+  // Calcul du progrès global
+  const totalQuestions = totalTraits * questionsPerTrait;
+  const currentQuestionNumber = (currentTraitIndex * questionsPerTrait) + questionIndex + 1;
+  const progress = (currentQuestionNumber / totalQuestions) * 100;
 
   useEffect(() => {
-    const traitQuestions = currentTrait.questions;
-    const randomIndex = Math.floor(Math.random() * traitQuestions.length);
-    const baseQuestion = traitQuestions[randomIndex];
-    // Remplacer {friend} par un espace souligné pour créer une question générique
-    const genericQuestion = baseQuestion.replace(/{friend}/g, '_____');
-    setCurrentQuestion(genericQuestion);
+    // Sélectionner 3 questions aléatoires uniques
+    const shuffledQuestions = [...currentTrait.questions].sort(() => Math.random() - 0.5);
+    setCurrentQuestions(shuffledQuestions.slice(0, questionsPerTrait));
+    setQuestionIndex(0);
+    setScores({});
+    setSelectedWinner(null);
   }, [currentTrait]);
 
   const handleSelection = (selectedFriendId: string) => {
-    const winner = selectedFriendId;
-    const loser = friends.find(f => f.id !== selectedFriendId)?.id;
+    if (selectedWinner) return; // Empêcher la sélection multiple
 
-    if (winner && loser) {
-      onRate(currentTrait.id, winner, 5);
-      onRate(currentTrait.id, loser, 2);
+    setSelectedWinner(selectedFriendId);
+    const otherFriendId = friends.find(f => f.id !== selectedFriendId)?.id;
+
+    if (otherFriendId) {
+      const newScores = {
+        ...scores,
+        [selectedFriendId]: (scores[selectedFriendId] || 0) + 1
+      };
+      setScores(newScores);
+
+      // Attendre un moment pour montrer la sélection
+      setTimeout(() => {
+        if (questionIndex < questionsPerTrait - 1) {
+          setQuestionIndex(prev => prev + 1);
+          setSelectedWinner(null);
+        } else {
+          // Fin des questions pour ce trait
+          const winningFriend = Object.entries(newScores).reduce((a, b) => 
+            b[1] > (a[1] || 0) ? b : a
+          )[0];
+          
+          // Mettre à jour les scores finals
+          onRate(currentTrait.id, winningFriend, newScores[winningFriend] || 0);
+          onRate(currentTrait.id, otherFriendId, 
+            (newScores[otherFriendId] || 0));
+        }
+      }, 500);
     }
   };
 
   return (
     <div className="space-y-8">
       <div className="text-center space-y-4">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">
+        <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600">
           {currentTrait.name}
         </h2>
         
-        {/* Nouvelle présentation de la question */}
-        <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
-          <p className="text-lg text-gray-600 mb-4">
-            {currentQuestion.split('_____')[0]}
-            <span className="font-bold bg-gradient-to-r from-purple-600 to-blue-600 text-transparent bg-clip-text">
-              {friends[0].name} ou {friends[1].name}
-            </span>
-            {currentQuestion.split('_____')[1]}
+        <div className="bg-white rounded-xl p-8 shadow-lg border border-gray-100">
+          <p className="text-xl text-gray-700 font-medium">
+            {currentQuestions[questionIndex]?.replace('{friend}', '___')}
           </p>
+          <div className="mt-4 flex justify-center items-center gap-2">
+            <div className="h-2 w-16 rounded-full bg-gradient-to-r from-purple-600 to-blue-600" />
+            <p className="text-sm font-medium text-gray-500">
+              Question {questionIndex + 1}/{questionsPerTrait}
+            </p>
+            <div className="h-2 w-16 rounded-full bg-gradient-to-r from-purple-600 to-blue-600" />
+          </div>
         </div>
 
         <div className="w-full mt-6">
-          <Progress value={progress} className="h-2" />
-          <p className="text-sm text-gray-600 mt-2">
-            Trait {currentTraitIndex + 1} sur {totalTraits}
-          </p>
+          <div className="mb-2 flex justify-between text-sm text-gray-600">
+            <span>Question {currentQuestionNumber} sur {totalQuestions}</span>
+            <span>Trait {currentTraitIndex + 1}/{totalTraits}</span>
+          </div>
+          <Progress value={progress} className="h-3" />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12">
         {friends.map((friend) => (
           <motion.div
             key={friend.id}
-            whileHover={{ scale: 1.02 }}
-            className="flex flex-col items-center gap-4"
+            whileHover={!selectedWinner ? { scale: 1.02 } : {}}
+            className={`relative ${
+              selectedWinner === friend.id ? 'ring-4 ring-green-500' : ''
+            }`}
           >
-            <div className="relative w-32 h-32">
-              {friend.avatar ? (
-                <img
-                  src={friend.avatar}
-                  alt={friend.name}
-                  className="w-full h-full rounded-full object-cover shadow-lg"
-                />
-              ) : (
-                <div className="w-full h-full rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center shadow-lg">
-                  <span className="text-4xl font-bold text-white">
-                    {friend.name[0]}
-                  </span>
-                </div>
-              )}
-            </div>
             <Button
               onClick={() => handleSelection(friend.id)}
-              className="w-full px-6 py-8 text-lg font-semibold bg-gradient-to-r from-purple-600 to-blue-600 
-                         hover:from-purple-700 hover:to-blue-700 text-white rounded-lg shadow-lg 
-                         transition-all duration-300 hover:shadow-xl"
+              disabled={!!selectedWinner}
+              className={`w-full h-full px-8 py-6 rounded-xl transition-all duration-300
+                ${selectedWinner 
+                  ? selectedWinner === friend.id
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-500'
+                    : 'bg-gray-200 opacity-50'
+                  : 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700'
+                }
+              `}
             >
-              {friend.name}
+              <div className="flex items-center gap-4">
+                {friend.avatar ? (
+                  <img src={friend.avatar} alt="" className="w-12 h-12 rounded-full" />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                    <span className="text-2xl font-bold text-white">
+                      {friend.name[0]}
+                    </span>
+                  </div>
+                )}
+                <span className="text-xl font-semibold text-white">{friend.name}</span>
+              </div>
             </Button>
           </motion.div>
         ))}
@@ -114,10 +152,7 @@ const VersusQuestionnaire: React.FC<VersusQuestionnaireProps> = ({
 
       <div className="text-center mt-8">
         <p className="text-gray-600 italic">
-          Sélectionnez la personne qui correspond le mieux à cette question
-        </p>
-        <p className="text-sm text-gray-500 mt-2">
-          {currentTrait.description}
+          Choisissez la personne qui correspond le mieux à cette situation
         </p>
       </div>
     </div>
