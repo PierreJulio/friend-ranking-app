@@ -5,6 +5,7 @@ import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import Input from '../components/ui/input';
 import Button from '../components/ui/button';
+import Image from 'next/image';
 
 interface AddFriendFormProps {
   currentFriend: string;
@@ -65,7 +66,7 @@ const AddFriendForm: React.FC<AddFriendFormProps> = ({
           />
           {currentFriend && (
             <small className="text-gray-500 mt-1">
-              Appuyez sur "Ajouter" ou Entrée pour valider
+              Appuyez sur &quot;Ajouter&quot; ou Entrée pour valider
             </small>
           )}
         </div>
@@ -90,10 +91,13 @@ const AddFriendForm: React.FC<AddFriendFormProps> = ({
                 exit={{ opacity: 0, scale: 0.8 }}
                 className="mt-3 flex justify-center"
               >
-                <img
+                <Image
                   src={URL.createObjectURL(currentAvatar)}
                   alt="Aperçu Avatar"
-                  className="w-24 h-24 rounded-full object-cover ring-2 ring-blue-500"
+                  width={96}
+                  height={96}
+                  unoptimized
+                  className="rounded-full object-cover ring-2 ring-blue-500"
                 />
               </motion.div>
             )}
@@ -125,7 +129,14 @@ const AddFriendForm: React.FC<AddFriendFormProps> = ({
               >
                 <div className="flex items-center space-x-4">
                   {friend.avatar ? (
-                    <img src={friend.avatar} alt={friend.name} className="w-12 h-12 rounded-full object-cover ring-2 ring-gray-200" />
+                    <Image
+                      src={friend.avatar}
+                      alt={friend.name}
+                      width={48}
+                      height={48}
+                      unoptimized
+                      className="rounded-full object-cover ring-2 ring-gray-200"
+                    />
                   ) : (
                     <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
                       {friend.name.charAt(0).toUpperCase()}

@@ -1,7 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Star, ChevronRight } from 'lucide-react';
-import Button from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import personalityTraits from '../data/personalityTraits';
 import { collection, addDoc } from 'firebase/firestore';

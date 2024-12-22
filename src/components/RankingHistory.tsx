@@ -11,12 +11,21 @@ interface RankingHistoryProps {
 }
 
 interface GroupedRankings {
-  [key: string]: any[];
+  [key: string]: HistoryItem[];
+}
+
+interface HistoryItem {
+  id: string;
+  finalRankings: {
+    friend: string;
+    averageScore: string;
+  }[];
+  timestamp: Date;
 }
 
 const RankingHistory: React.FC<RankingHistoryProps> = ({ userId, onClose }) => {
-  const [history, setHistory] = useState<any[]>([]);
-  const [selectedRanking, setSelectedRanking] = useState<number | null>(null);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [selectedRanking, setSelectedRanking] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,7 +43,7 @@ const RankingHistory: React.FC<RankingHistoryProps> = ({ userId, onClose }) => {
     };
   };
 
-  const groupRankingsByDay = (rankings: any[]) => {
+  const groupRankingsByDay = (rankings: HistoryItem[]) => {
     return rankings.reduce((groups: GroupedRankings, ranking) => {
       const dateKey = new Date(ranking.timestamp).toLocaleDateString('fr-FR');
       if (!groups[dateKey]) {
@@ -57,14 +66,14 @@ const RankingHistory: React.FC<RankingHistoryProps> = ({ userId, onClose }) => {
         const querySnapshot = await getDocs(q);
         const rankings = querySnapshot.docs.map(doc => ({
           id: doc.id,
-          ...doc.data(),
+          finalRankings: doc.data().finalRankings || [],
           timestamp: doc.data().timestamp?.toDate()
         }));
         
         setHistory(rankings);
         setLoading(false);
-      } catch (err) {
-        setError('L\'index est en cours de création. Veuillez réessayer plus tard.');
+      } catch {
+        setError('L&apos;index est en cours de création. Veuillez réessayer plus tard.');
         setLoading(false);
       }
     };
@@ -77,7 +86,7 @@ const RankingHistory: React.FC<RankingHistoryProps> = ({ userId, onClose }) => {
       try {
         await deleteDoc(doc(db, 'finalRankings', rankingId));
         setHistory(prevHistory => prevHistory.filter(item => item.id !== rankingId));
-      } catch (err) {
+      } catch {
         setError('Erreur lors de la suppression du classement.');
       }
     }

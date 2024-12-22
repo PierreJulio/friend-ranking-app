@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
+import React, { useState } from 'react';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebaseConfig';
 import { motion } from 'framer-motion';
 import { Lock, Mail } from 'lucide-react';
-import { useRouter } from 'next/router';
 import Button from '../components/ui/button';
 import Input from '../components/ui/input';
 
@@ -17,7 +16,6 @@ const SignIn = ({ onSignUpClick = () => {}, onAuthSuccess = () => {} }: Partial<
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const router = useRouter();
 
   const handleSignIn = async () => {
     try {
@@ -83,11 +81,8 @@ const SignIn = ({ onSignUpClick = () => {}, onAuthSuccess = () => {} }: Partial<
 
       <p className="mt-4 text-sm text-center text-gray-600">
         Pas encore de compte ? 
-        <button 
-          onClick={onSignUpClick}
-          className="text-blue-600 hover:underline ml-1 font-medium"
-        >
-          S'inscrire
+        <button onClick={onSignUpClick}>
+          S&apos;inscrire
         </button>
       </p>
     </motion.div>

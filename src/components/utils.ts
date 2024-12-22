@@ -1,7 +1,15 @@
-import { v4 as uuidv4 } from 'uuid';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import personalityTraits from '../data/personalityTraits';
+
+type Ranking = {
+  rank: number;
+  friend: string;
+  avatar: string | null;
+  averageScore: string;
+  traits: { [traitId: string]: number };
+  badges: string[];
+};
 
 export const selectNextFriendToRate = (
   friends: { id: string; name: string; avatar: string | null }[],
@@ -36,13 +44,13 @@ export const selectNextFriendToRate = (
   return nextFriend.id;
 };
 
-export const calculateFinalRankings = async (
+export async function calculateFinalRankings(
   friends: { id: string; name: string; avatar: string | null }[],
   friendRatings: { [traitId: string]: { [friendId: string]: number } },
-  setFinalRankings: (value: any) => void,
-  setCurrentTraitIndex: (value: number | null) => void,
+  setFinalRankings: React.Dispatch<React.SetStateAction<Ranking[] | null>>,
+  setCurrentTraitIndex: React.Dispatch<React.SetStateAction<number | null>>,
   userId: string
-) => {
+) {
   const finalScores: {
     [key: string]: {
       averageScore: number;

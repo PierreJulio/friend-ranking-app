@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { createUserWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
+import React, { useState } from 'react';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebaseConfig';
 import { motion } from 'framer-motion';
 import { Lock, Mail, UserPlus } from 'lucide-react';
-import { useRouter } from 'next/router';
 import Button from '../components/ui/button';
 import Input from '../components/ui/input';
 
@@ -17,7 +16,6 @@ const SignUp = ({ onBackToSignIn = () => {}, onAuthSuccess = () => {} }: Partial
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const router = useRouter();
 
   const handleSignUp = async () => {
     try {
@@ -27,7 +25,7 @@ const SignUp = ({ onBackToSignIn = () => {}, onAuthSuccess = () => {} }: Partial
       setError('');
       onAuthSuccess();
     } catch (error) {
-      setError((error as any).message);
+      setError((error as Error).message);
     }
   };
 

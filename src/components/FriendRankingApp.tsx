@@ -1,16 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, ChangeEvent } from 'react';
-import { useRouter } from 'next/router';
+import React, { useState, useEffect } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../firebaseConfig';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
-import Button from '../components/ui/button';
 import AddFriendForm from './AddFriendForm';
 import Questionnaire from './Questionnaire';
 import FinalRanking from './FinalRanking';
-import SignUp from './SignUp';
-import SignIn from './SignIn';
 import SignOut from './SignOut';
 import RankingHistory from './RankingHistory';
 import { selectNextFriendToRate, calculateFinalRankings } from './utils';
@@ -42,8 +38,15 @@ interface Ranking {
   badges: string[];
 }
 
+const saveProgress = (
+  userId: string,
+  friends: Friend[],
+  usedQuestions: string[]
+) => {
+  // ...existing code...
+};
+
 const FriendRankingApp = () => {
-  const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [friends, setFriends] = useState<Friend[]>([]);
   const [currentFriend, setCurrentFriend] = useState('');
@@ -92,6 +95,12 @@ const FriendRankingApp = () => {
       }
     }
   }, [currentTraitIndex, friendRatings]);
+
+  useEffect(() => {
+    if (user?.uid && friends.length > 0) {
+      saveProgress(user.uid, friends, Object.keys(usedQuestions));
+    }
+  }, [friends, usedQuestions, user?.uid, currentQuestion]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -173,7 +182,6 @@ const FriendRankingApp = () => {
             setFriends([]);
           }}
           onRestartWithSameFriends={restartWithSameFriends}
-          showHistory={showHistory}
           setShowHistory={setShowHistory}
         />
       );

@@ -13,6 +13,7 @@ import {
 import { Bar } from 'react-chartjs-2';
 import Button from '../components/ui/button';
 import personalityTraits from '../data/personalityTraits';
+import Image from 'next/image';
 
 // Enregistrer les éléments Chart.js
 ChartJS.register(
@@ -62,13 +63,12 @@ interface FinalRankingProps {
   }[];
   onRestart: () => void;
   onRestartWithSameFriends: () => void;
-  showHistory: boolean;
-  setShowHistory: (value: boolean) => void;
+  setShowHistory: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const FinalRanking: React.FC<FinalRankingProps> = ({ finalRankings, onRestart, onRestartWithSameFriends, showHistory, setShowHistory }) => {
+const FinalRanking: React.FC<FinalRankingProps> = ({ finalRankings, onRestart, onRestartWithSameFriends, setShowHistory }) => {
   const [showGraph, setShowGraph] = useState<{ [key: number]: boolean }>({});
-  const [selectedRank, setSelectedRank] = useState<number | null>(null);
+  const [selectedRank] = useState<number | null>(null);
 
   const toggleGraph = (index: number) => {
     setShowGraph(prev => ({ ...prev, [index]: !prev[index] }));
@@ -170,10 +170,13 @@ const FinalRanking: React.FC<FinalRankingProps> = ({ finalRankings, onRestart, o
                   <div className="flex items-center space-x-4">
                     <div className="relative">
                       {ranking.avatar ? (
-                        <img
+                        <Image
                           src={ranking.avatar}
                           alt={ranking.friend}
-                          className="w-16 h-16 rounded-full object-cover ring-2 ring-offset-2 ring-blue-100"
+                          width={64}
+                          height={64}
+                          unoptimized
+                          className="rounded-full object-cover ring-2 ring-blue-100"
                         />
                       ) : (
                         <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xl font-semibold">
