@@ -43,6 +43,9 @@ const saveProgress = (
   _friends: Friend[],
   _usedQuestions: string[]
 ) => {
+  void _userId;
+  void _friends;
+  void _usedQuestions;
   // ...existing code...
 };
 
@@ -94,7 +97,7 @@ const FriendRankingApp = () => {
         }
       }
     }
-  }, [currentTraitIndex, friendRatings, user]);
+  }, [currentTraitIndex, friendRatings, user, friends, usedQuestions]);
 
   useEffect(() => {
     if (user && user.uid && friends.length > 0) {
