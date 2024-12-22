@@ -12,7 +12,8 @@ import RankingHistory from './RankingHistory';
 import { selectNextFriendToRate, calculateFinalRankings } from './utils';
 import { Chart as ChartJS, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend } from 'chart.js';
 import { v4 as uuidv4 } from 'uuid';
-import { Users } from 'lucide-react';
+import { Users, ArrowLeft } from 'lucide-react';
+import { useRouter } from 'next/router';
 import personalityTraits from '../data/personalityTraits';
 
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
@@ -50,6 +51,7 @@ const saveProgress = (
 };
 
 const FriendRankingApp = () => {
+  const router = useRouter();
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [friends, setFriends] = useState<Friend[]>([]);
   const [currentFriend, setCurrentFriend] = useState('');
@@ -166,6 +168,10 @@ const FriendRankingApp = () => {
     setQuestionsAnswered(prev => prev + 1);
   };
 
+  const handleBackToMenu = () => {
+    router.push('/app');
+  };
+
   const renderContent = () => {
     if (!user) {
       return null; // Au lieu d'utiliser Navigate, on utilise l'effet ci-dessus
@@ -245,11 +251,20 @@ const FriendRankingApp = () => {
     <div className="min-h-screen min-w-full flex items-center justify-center bg-gradient-to-r from-blue-500 to-purple-600 p-4">
       <Card className="w-full max-w-2xl shadow-2xl">
         <CardHeader className="bg-gradient-to-r from-blue-700 to-purple-700 text-white p-6 rounded-t-lg flex items-center justify-between">
-          <div className="flex items-center">
-            <Users className="mr-2" />
-            <CardTitle className="text-3xl">
-              Classement de mes Amis
-            </CardTitle>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={handleBackToMenu}
+              className="p-2 hover:bg-white/10 rounded-full transition-colors"
+              title="Retour au menu"
+            >
+              <ArrowLeft size={24} />
+            </button>
+            <div className="flex items-center">
+              <Users className="mr-2" />
+              <CardTitle className="text-3xl">
+                Classement de mes Amis
+              </CardTitle>
+            </div>
           </div>
           {user && <SignOut className="ml-auto" />} {/* Utilisation de ml-auto pour aligner à droite */}
         </CardHeader>

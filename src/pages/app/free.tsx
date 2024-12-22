@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
-import GameModeSelection from '../components/GameModeSelection';
+import FriendRankingApp from '../../components/FriendRankingApp';
 
-export default function AppPage({ authenticated }: { authenticated: boolean }) {
+export default function FreePage({ authenticated }: { authenticated: boolean }) {
   const router = useRouter();
 
   useEffect(() => {
@@ -15,5 +15,5 @@ export default function AppPage({ authenticated }: { authenticated: boolean }) {
     return null;
   }
 
-  return <GameModeSelection />;
+  return <FriendRankingApp />;
 }
