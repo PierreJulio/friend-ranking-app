@@ -73,7 +73,11 @@ const FriendRankingApp = () => {
   }, []);
 
   useEffect(() => {
-    if (currentTraitIndex !== null && personalityTraits[currentTraitIndex] && user) {
+    if (
+      currentTraitIndex !== null &&
+      personalityTraits[currentTraitIndex] &&
+      user
+    ) {
       const nextFriend = selectNextFriendToRate(
         friends,
         friendRatings,
@@ -97,7 +101,7 @@ const FriendRankingApp = () => {
         }
       }
     }
-  }, [currentTraitIndex, friendRatings, user, friends, usedQuestions]);
+  }, [currentTraitIndex, friendRatings, user]);
 
   useEffect(() => {
     if (user && user.uid && friends.length > 0) {
