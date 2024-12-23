@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Paper, Typography, Grid, CircularProgress, Chip, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
-import { ArrowLeft, Target, Lightbulb, ThumbsUp, ThumbsDown, TrendingUp } from 'lucide-react';
+import { Box, Paper, Typography, Grid, CircularProgress, Chip, Select, MenuItem, FormControl, InputLabel, Avatar, Button, IconButton } from '@mui/material';
+import { ArrowLeft, Target, Lightbulb, ThumbsUp, ThumbsDown, TrendingUp, Award, Star, Trophy, X, ListChecks, Play, Shuffle } from 'lucide-react';
 import { styled } from '@mui/material/styles';
 import { useRouter } from 'next/router';
 import { db } from '../../firebaseConfig';
 import { collection, query, where, getDocs } from 'firebase/firestore';
+import personalityTraits from '../../data/personalityTraits';
+import recommendations from '../../data/recommendations';
+import ReactConfetti from 'react-confetti';
+import { LinearProgress } from '@mui/material';
+import { getRelevantActivities, improvementActivities, ImprovementActivity } from '../../data/relationshipImprovements';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(3),
@@ -12,6 +17,65 @@ const StyledPaper = styled(Paper)(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
   transition: 'all 0.2s ease-in-out',
+  borderRadius: '16px',
+  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+  backdropFilter: 'blur(10px)',
+  boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
+}));
+
+const ModernChip = styled(Chip)(({ theme }) => ({
+  borderRadius: '20px',
+  height: '32px',
+  '& .MuiChip-label': {
+    padding: '0 16px',
+  },
+  transition: 'all 0.2s ease',
+  '&:hover': {
+    transform: 'translateY(-2px)',
+  },
+}));
+
+const RecommendationCard = styled(Box)(({ theme }) => ({
+  padding: theme.spacing(3),
+  marginBottom: theme.spacing(2),
+  borderRadius: theme.spacing(2),
+  background: 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.95) 100%)',
+  backdropFilter: 'blur(10px)',
+  border: '1px solid rgba(255,255,255,0.18)',
+  transition: 'all 0.3s ease',
+  cursor: 'pointer',
+  '&:hover': {
+    transform: 'translateY(-5px)',
+    boxShadow: '0 10px 20px rgba(0,0,0,0.1)',
+  },
+}));
+
+const CompactModal = styled(Box)(({ theme }) => ({
+  position: 'fixed',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  width: '95%',
+  maxWidth: '500px',
+  maxHeight: '85vh',
+  borderRadius: theme.shape.borderRadius * 2,
+  backgroundColor: '#fff',
+  boxShadow: '0 24px 48px rgba(0, 0, 0, 0.2)',
+  overflow: 'hidden',
+  display: 'flex',
+  flexDirection: 'column',
+}));
+
+const ImpactBadge = styled(Box)(({ theme }) => ({
+  padding: theme.spacing(1, 2),
+  borderRadius: theme.shape.borderRadius * 4,
+  backgroundColor: theme.palette.primary.main,
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: theme.spacing(1),
+  margin: theme.spacing(0.5),
+  flexWrap: 'wrap',
+  fontSize: '0.875rem',
 }));
 
 interface FriendAnalysis {
@@ -21,7 +85,7 @@ interface FriendAnalysis {
   };
   strengths: Array<string>;
   weaknesses: Array<string>;
-  recommendations: Array<string>;
+  recommendations: Array<{ recommendation: string; examples: string[] }>;
 }
 
 interface RatingHistory {
@@ -43,7 +107,13 @@ interface EnhancedFriendAnalysis extends FriendAnalysis {
 interface FriendData {
   id: string;
   name: string;
+  avatar: string | null;
   hasEvaluation: boolean;
+}
+
+interface QuizQuestion {
+  question: string;
+  options: string[];
 }
 
 const AnalysisMode: React.FC = () => {
@@ -53,6 +123,30 @@ const AnalysisMode: React.FC = () => {
   const [analysisData, setAnalysisData] = useState<EnhancedFriendAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [ratingHistory, setRatingHistory] = useState<RatingHistory[]>([]);
+  const [gamificationPoints, setGamificationPoints] = useState<number>(0);
+  const [showConfetti, setShowConfetti] = useState<boolean>(false);
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [gameCompleted, setGameCompleted] = useState<boolean>(false);
+  const [quizStep, setQuizStep] = useState<number>(0);
+  const [quizAnswers, setQuizAnswers] = useState<string[]>([]);
+  const [recommendedActivity, setRecommendedActivity] = useState<string>('');
+  const [selectedActivity, setSelectedActivity] = useState<ImprovementActivity | null>(null);
+  const [showActivityModal, setShowActivityModal] = useState(false);
+
+  const quizQuestions: QuizQuestion[] = [
+    {
+      question: "Quel type d'activités préférez-vous faire ensemble ?",
+      options: ['Sports', 'Culture', 'Gastronomie', 'Nature']
+    },
+    {
+      question: "Quels sont vos centres d'intérêt communs ?",
+      options: ['Musique', 'Films', 'Lecture', 'Jeux vidéo']
+    },
+    {
+      question: "Dans quel environnement êtes-vous le plus à l'aise ensemble ?",
+      options: ['En ville', 'À la maison', 'En plein air', 'Dans des lieux animés']
+    }
+  ];
 
   useEffect(() => {
     const loadFriendsWithEvaluations = async () => {
@@ -70,6 +164,7 @@ const AnalysisMode: React.FC = () => {
           friendsMap.set(doc.id, {
             id: doc.id,
             name: data.name,
+            avatar: data.avatar || null,
             hasEvaluation: false
           });
         });
@@ -140,12 +235,12 @@ const AnalysisMode: React.FC = () => {
           name: selectedFriend,
           scores: averageScores,
           strengths: Object.entries(averageScores)
-            .filter(([_, score]) => score >= 8)
-            .map(([trait, _]) => trait),
+            .filter(([_, score]) => score > 2.5) // Ajustez le seuil pour les points forts
+            .map(([trait, _]) => personalityTraits.find(t => t.id === trait)?.name || trait),
           weaknesses: Object.entries(averageScores)
-            .filter(([_, score]) => score <= 6)
-            .map(([trait, _]) => trait),
-          recommendations: [] as Array<string>,
+            .filter(([_, score]) => score <= 2.5) // Ajustez le seuil pour les points faibles
+            .map(([trait, _]) => personalityTraits.find(t => t.id === trait)?.name || trait),
+          recommendations: [] as Array<{ recommendation: string; examples: string[] }>,
           progress: { 
             improved: [] as Array<string>, 
             declined: [] as Array<string> 
@@ -167,65 +262,416 @@ const AnalysisMode: React.FC = () => {
     analyzeData();
   }, [selectedFriend]);
 
-  const generateRecommendations = (weaknesses: string[], improved: string[]): string[] => {
-    const recommendations: string[] = [];
+  useEffect(() => {
+    // Exemple : Lorsque la liste d’amis est chargée, on octroie quelques points de base
+    if (friendsList.length > 0) {
+      setGamificationPoints(prev => prev + 5);
+    }
+  }, [friendsList]);
+
+  useEffect(() => {
+    // Si on a beaucoup gagné de points, on déclenche un effet "confetti"
+    if (gamificationPoints >= 20) {
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 3000);
+    }
+  }, [gamificationPoints]);
+
+  useEffect(() => {
+    // Exemple : Lorsque l’analyse est terminée, on ajoute un bonus de points
+    if (!loading && analysisData) {
+      setGamificationPoints(prev => prev + 10);
+    }
+  }, [loading, analysisData]);
+
+  const generateRecommendations = (weaknesses: string[], improved: string[]): Array<{ recommendation: string; examples: string[] }> => {
+    let recommendationsList: Array<{ recommendation: string; examples: string[] }> = [];
     
+    // Si nous avons des points à améliorer, ajouter leurs recommandations
     weaknesses.forEach(weakness => {
-      switch(weakness) {
-        case 'emotional-support':
-          recommendations.push("Essayez de partager plus de moments émotionnels ensemble");
-          break;
-        case 'fun-adventure':
-          recommendations.push("Planifiez plus d'activités nouvelles et excitantes");
-          break;
-        // Ajouter d'autres cas selon vos traits
+      if (recommendations[weakness] && Array.isArray(recommendations[weakness])) {
+        recommendationsList.push(...recommendations[weakness]);
       }
     });
 
-    if (improved.length > 0) {
-      recommendations.push("Continuez sur votre lancée, les progrès sont visibles!");
+    // Si nous n'avons pas de points faibles, générer des recommandations basées sur les forces
+    if (weaknesses.length === 0) {
+      recommendationsList = [
+        {
+          recommendation: "Continuez à renforcer votre excellente relation !",
+          examples: [
+            "Maintenez vos habitudes positives",
+            "Continuez à communiquer ouvertement",
+            "Passez du temps de qualité ensemble"
+          ]
+        }
+      ];
     }
 
-    return recommendations;
+    if (improved.length > 0) {
+      recommendationsList.push({
+        recommendation: "Continuez sur votre lancée, les progrès sont visibles!",
+        examples: ["Continuez à faire ce qui fonctionne bien et à renforcer vos points forts."]
+      });
+    }
+
+    return recommendationsList;
   };
 
-  return (
-    <div className="min-h-screen min-w-full flex items-center justify-center bg-gradient-to-r from-blue-500 to-purple-600 p-4">
-      <Paper className="w-full max-w-3xl shadow-2xl" sx={{ borderRadius: 0 }}>
-        <Box className="bg-gradient-to-r from-blue-700 to-purple-700 text-white p-6">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.back()}
-              className="p-2 hover:bg-white/10 rounded-full transition-colors"
+  const handleStartGame = () => {
+    if (!analysisData) return;
+    
+    const relevantActivities = getRelevantActivities(
+      analysisData.weaknesses,
+      analysisData.strengths
+    );
+    
+    if (relevantActivities.length > 0) {
+      // Sélectionner une activité aléatoire parmi les plus pertinentes
+      const randomIndex = Math.floor(Math.random() * relevantActivities.length);
+      setSelectedActivity(relevantActivities[randomIndex]);
+      // Stocker l'activité sélectionnée pour éviter les répétitions
+      const previousActivities = localStorage.getItem('previousActivities') 
+        ? JSON.parse(localStorage.getItem('previousActivities') || '[]')
+        : [];
+      
+      previousActivities.push(relevantActivities[randomIndex].title);
+      // Garder seulement les 5 dernières activités
+      if (previousActivities.length > 5) {
+        previousActivities.shift();
+      }
+      localStorage.setItem('previousActivities', JSON.stringify(previousActivities));
+      
+      setShowActivityModal(true);
+    }
+  };
+
+  // Ajoutez cette fonction pour vérifier si une activité a été récemment proposée
+  const wasRecentlyProposed = (activity: ImprovementActivity): boolean => {
+    const previousActivities = JSON.parse(localStorage.getItem('previousActivities') || '[]');
+    return previousActivities.includes(activity.title);
+  };
+
+  const handleGameComplete = () => {
+    setIsPlaying(false);
+    setGameCompleted(true);
+    // Optionally add gamification points
+    setGamificationPoints(prev => prev + 5);
+  };
+
+  const handleQuizAnswer = (answer: string) => {
+    setQuizAnswers([...quizAnswers, answer]);
+    if (quizStep < quizQuestions.length - 1) {
+      setQuizStep(quizStep + 1);
+    } else {
+      generateRecommendation();
+    }
+  };
+
+  const generateRecommendation = () => {
+    // Logique pour générer une recommandation basée sur les réponses
+    const activities = {
+      'Sports': ['Cours de yoga en duo', 'Partie de tennis', 'Randonnée'],
+      'Culture': ['Visite de musée', 'Concert', 'Cours de peinture'],
+      'Gastronomie': ['Cours de cuisine', 'Dégustation de vins', 'Restaurant découverte'],
+      'Nature': ['Jardinage', 'Pique-nique', 'Observation des étoiles']
+    };
+
+    const preferredCategory = quizAnswers[0] as keyof typeof activities;
+    const activitiesList = activities[preferredCategory] || [];
+    const randomActivity = activitiesList[Math.floor(Math.random() * activitiesList.length)];
+    setRecommendedActivity(randomActivity);
+    setGameCompleted(true);
+  };
+
+  const renderQuiz = () => (
+    <Box sx={{ mt: 4, p: 3, bgcolor: 'background.paper', borderRadius: 2 }}>
+      <Typography variant="h6" gutterBottom>
+        Question {quizStep + 1}/{quizQuestions.length}
+      </Typography>
+      <Typography variant="body1" sx={{ mb: 3 }}>
+        {quizQuestions[quizStep].question}
+      </Typography>
+      <Grid container spacing={2}>
+        {quizQuestions[quizStep].options.map((option) => (
+          <Grid item xs={6} key={option}>
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={() => handleQuizAnswer(option)}
+              sx={{ py: 2 }}
             >
-              <ArrowLeft size={24} />
-            </button>
-            <div className="flex items-center gap-2">
-              <Target className="w-6 h-6" />
-              <Typography variant="h4" className="text-3xl">Analyse Relationnelle</Typography>
+              {option}
+            </Button>
+          </Grid>
+        ))}
+      </Grid>
+    </Box>
+  );
+
+  const renderRecommendation = () => (
+    <Box sx={{ mt: 4, p: 3, bgcolor: 'background.paper', borderRadius: 2 }}>
+      <Typography variant="h5" gutterBottom color="primary">
+        Activité recommandée pour renforcer votre relation
+      </Typography>
+      <Typography variant="h6" sx={{ mt: 2 }}>
+        {recommendedActivity}
+      </Typography>
+      <Typography variant="body1" sx={{ mt: 2, color: 'text.secondary' }}>
+        Cette activité a été choisie en fonction de vos réponses et des points à améliorer
+        dans votre relation.
+      </Typography>
+    </Box>
+  );
+
+  const DifficultyChip = ({ difficulty }: { difficulty: string }) => {
+    const colors = {
+      easy: { bg: '#4CAF50', text: 'Facile' },
+      medium: { bg: '#FF9800', text: 'Moyen' },
+      hard: { bg: '#f44336', text: 'Difficile' }
+    };
+    
+    return (
+      <Chip
+        label={colors[difficulty as keyof typeof colors].text}
+        sx={{
+          bgcolor: colors[difficulty as keyof typeof colors].bg,
+          color: 'white',
+          fontWeight: 'bold',
+          fontSize: '0.75rem'
+        }}
+      />
+    );
+  };
+  
+  const DurationChip = ({ duration }: { duration: string }) => {
+    const colors = {
+      short: { bg: '#81c784', text: 'Court terme' },
+      medium: { bg: '#4dabf5', text: 'Moyen terme' },
+      long: { bg: '#9575cd', text: 'Long terme' }
+    };
+    
+    return (
+      <Chip
+        label={colors[duration as keyof typeof colors].text}
+        sx={{
+          bgcolor: colors[duration as keyof typeof colors].bg,
+          color: 'white',
+          fontWeight: 'bold',
+          fontSize: '0.75rem'
+        }}
+      />
+    );
+  };
+  
+  // Remplacez le renderActivityModal existant par celui-ci
+  const renderActivityModal = () => (
+    <Box sx={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      bgcolor: 'rgba(0,0,0,0.7)',
+      zIndex: 1000,
+      p: { xs: 2, sm: 4 },
+      overflow: 'auto',
+    }}>
+      <CompactModal>
+        {/* Header avec gradient */}
+        <Box sx={{
+          background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+          p: 3,
+          color: 'white',
+        }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+            <Typography variant="h6" sx={{ fontWeight: 'bold', flex: 1 }}>
+              {selectedActivity?.title}
+            </Typography>
+            <IconButton 
+              onClick={() => setShowActivityModal(false)}
+              sx={{ color: 'white', mt: -1, mr: -1 }}
+            >
+              <X size={20} />
+            </IconButton>
+          </Box>
+          
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            <Chip
+              size="small"
+              label={selectedActivity?.difficulty === 'easy' ? 'Facile' : 
+                     selectedActivity?.difficulty === 'medium' ? 'Moyen' : 'Difficile'}
+              sx={{
+                bgcolor: selectedActivity?.difficulty === 'easy' ? '#4CAF50' :
+                        selectedActivity?.difficulty === 'medium' ? '#FF9800' : '#f44336',
+                color: 'white',
+                fontSize: '0.75rem',
+              }}
+            />
+            <Chip
+              size="small"
+              label={selectedActivity?.duration === 'short' ? 'Court terme' :
+                     selectedActivity?.duration === 'medium' ? 'Moyen terme' : 'Long terme'}
+              sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white', fontSize: '0.75rem' }}
+            />
+          </Box>
+        </Box>
+  
+        {/* Contenu scrollable */}
+        <Box sx={{ p: 2, overflow: 'auto' }}>
+          <Typography variant="body2" sx={{ mb: 3, color: 'text.secondary' }}>
+            {selectedActivity?.description}
+          </Typography>
+  
+          {/* Impact */}
+          <Typography variant="subtitle2" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Target size={16} />
+            Impact
+          </Typography>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 3 }}>
+            {selectedActivity?.impact.map((impact, index) => (
+              <Chip
+                key={index}
+                size="small"
+                icon={<Star size={14} />}
+                label={impact}
+                sx={{ bgcolor: 'primary.50' }}
+              />
+            ))}
+          </Box>
+  
+          {/* Steps */}
+          <Typography variant="subtitle2" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <ListChecks size={16} />
+            Étapes
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {selectedActivity?.steps.map((step, index) => (
+              <Box
+                key={index}
+                sx={{
+                  display: 'flex',
+                  gap: 2,
+                  alignItems: 'flex-start',
+                  p: 1.5,
+                  bgcolor: 'grey.50',
+                  borderRadius: 1,
+                }}
+              >
+                <Box sx={{
+                  width: 20,
+                  height: 20,
+                  borderRadius: '50%',
+                  bgcolor: 'primary.main',
+                  color: 'white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.75rem',
+                  flexShrink: 0,
+                }}>
+                  {index + 1}
+                </Box>
+                <Typography variant="body2">{step}</Typography>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+  
+        {/* Actions fixes en bas */}
+        <Box sx={{
+          p: 2,
+          borderTop: '1px solid',
+          borderColor: 'divider',
+          display: 'flex',
+          gap: 1,
+        }}>
+          <Button
+            variant="contained"
+            fullWidth
+            startIcon={<Play size={18} />}
+            onClick={() => {
+              setShowActivityModal(false);
+              setGamificationPoints(prev => prev + 10);
+            }}
+            sx={{
+              background: 'linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%)',
+            }}
+          >
+            Je me lance
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<Shuffle size={18} />}
+            onClick={() => {
+              const newActivities = getRelevantActivities(
+                analysisData?.weaknesses || [],
+                analysisData?.strengths || []
+              ).filter(activity => activity.title !== selectedActivity?.title);
+              
+              if (newActivities.length > 0) {
+                const randomIndex = Math.floor(Math.random() * newActivities.length);
+                setSelectedActivity(newActivities[randomIndex]);
+              }
+            }}
+          >
+            Autre
+          </Button>
+        </Box>
+      </CompactModal>
+    </Box>
+  );
+  
+  return (
+    <div className="min-h-screen min-w-full flex items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-4">
+      <Paper className="w-full max-w-4xl shadow-2xl" 
+        sx={{ 
+          borderRadius: '24px',
+          overflow: 'hidden',
+          background: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(10px)',
+        }}>
+        
+        {/* En-tête */}
+        <Box className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => router.back()}
+                className="p-2 hover:bg-white/10 rounded-full transition-colors"
+              >
+                <ArrowLeft size={24} />
+              </button>
+              <Typography variant="h4" sx={{ fontWeight: '600' }}>
+                Analyse de la Relation
+              </Typography>
             </div>
           </div>
         </Box>
 
         <Box sx={{ p: 4 }}>
+          {/* Sélecteur d'ami */}
           <FormControl fullWidth sx={{ mb: 4 }}>
-            <InputLabel>Sélectionner un ami</InputLabel>
             <Select
               value={selectedFriend || ''}
               onChange={(e) => setSelectedFriend(e.target.value)}
-              label="Sélectionner un ami"
+              displayEmpty
+              sx={{
+                borderRadius: '12px',
+                height: '56px'
+              }}
             >
-              {friendsList.length > 0 ? (
-                friendsList.map((friend) => (
-                  <MenuItem key={friend.id} value={friend.id}>
-                    {friend.name}
-                  </MenuItem>
-                ))
-              ) : (
-                <MenuItem disabled value="">
-                  Aucun ami avec des évaluations
+              <MenuItem disabled value="">
+                <em>Sélectionnez un ami à analyser</em>
+              </MenuItem>
+              {friendsList.map((friend) => (
+                <MenuItem key={friend.id} value={friend.id}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Avatar>{friend.name.charAt(0)}</Avatar>
+                    <Typography>{friend.name}</Typography>
+                  </Box>
                 </MenuItem>
-              )}
+              ))}
             </Select>
           </FormControl>
 
@@ -234,147 +680,195 @@ const AnalysisMode: React.FC = () => {
               <CircularProgress />
             </Box>
           ) : analysisData ? (
-            analysisData.recommendations.length === 1 && 
-            analysisData.recommendations[0].includes("Aucune évaluation") ? (
-              <Box sx={{ textAlign: 'center', p: 4 }}>
-                <Typography variant="h6" color="text.secondary">
-                  {analysisData.recommendations[0]}
-                </Typography>
-              </Box>
-            ) : (
-              <Grid container spacing={3}>
-                {/* Nouvelle section : Tendances */}
-                <Grid item xs={12}>
-                  <StyledPaper>
-                    <Typography variant="h6" gutterBottom className="flex items-center gap-2">
-                      <TrendingUp className="w-5 h-5 text-blue-500" />
-                      Évolution de la relation
+            <Grid container spacing={3}>
+              {/* Score Global */}
+              <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
+                <Box sx={{ 
+                  position: 'relative', 
+                  width: 200, 
+                  height: 200,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  <CircularProgress
+                    variant="determinate"
+                    value={Object.values(analysisData.scores).reduce((a, b) => a + b, 0) / Object.keys(analysisData.scores).length * 20}
+                    size={200}
+                    thickness={3}
+                    sx={{
+                      color: 'primary.main',
+                      position: 'absolute',
+                      '& .MuiCircularProgress-circle': {
+                        strokeLinecap: 'round',
+                      },
+                    }}
+                  />
+                  <Box sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                    <Typography variant="h2" color="primary" sx={{ fontWeight: 'bold' }}>
+                      {Math.round(Object.values(analysisData.scores).reduce((a, b) => a + b, 0) / Object.keys(analysisData.scores).length * 20)}%
                     </Typography>
-                    <Box sx={{ mt: 2 }}>
-                      <Typography variant="body1" sx={{ mb: 2 }}>
-                        Dernière évaluation : {analysisData.lastEvaluation.toLocaleDateString()}
+                    <Typography variant="subtitle1" color="text.secondary">
+                      Score Global
+                    </Typography>
+                  </Box>
+                </Box>
+              </Grid>
+
+              {/* Forces et Points à Améliorer */}
+              <Grid item xs={12} md={6}>
+                <StyledPaper>
+                  <Typography variant="h6" sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <ThumbsUp size={20} color="#4CAF50" />
+                    Points Forts
+                  </Typography>
+                  {analysisData.strengths.length > 0 ? (
+                    analysisData.strengths.map((strength, index) => (
+                      <Box key={index} sx={{ mb: 2 }}>
+                        <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Star size={16} color="#4CAF50" />
+                          {strength}
+                        </Typography>
+                      </Box>
+                    ))
+                  ) : (
+                    <Box sx={{ 
+                      p: 3, 
+                      textAlign: 'center', 
+                      bgcolor: 'error.light', 
+                      borderRadius: 2,
+                      color: 'white'
+                    }}>
+                      <Typography variant="body1">
+                        Aucun point fort identifié pour le moment. Continuez à travailler sur votre relation pour développer vos forces.
                       </Typography>
-                      {analysisData.progress.improved.length > 0 && (
+                    </Box>
+                  )}
+                </StyledPaper>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <StyledPaper>
+                  <Typography variant="h6" sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Target size={20} color="#f44336" />
+                    Points à Améliorer
+                  </Typography>
+                  {analysisData.weaknesses.length > 0 ? (
+                    analysisData.weaknesses.map((weakness, index) => (
+                      <Box key={index} sx={{ mb: 2 }}>
+                        <Typography variant="body1" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Target size={16} color="#f44336" />
+                          {weakness}
+                        </Typography>
+                      </Box>
+                    ))
+                  ) : (
+                    <Box sx={{ 
+                      p: 3, 
+                      textAlign: 'center', 
+                      bgcolor: 'success.light', 
+                      borderRadius: 2,
+                      color: 'white'
+                    }}>
+                      <Typography variant="body1">
+                        Félicitations ! Aucun point majeur à améliorer n'a été identifié. Continuez sur cette lancée !
+                      </Typography>
+                    </Box>
+                  )}
+                </StyledPaper>
+              </Grid>
+
+              {/* Recommandations Principales */}
+              <Grid item xs={12}>
+                <Typography variant="h5" sx={{ mb: 3, textAlign: 'center' }}>
+                  Recommandations Personnalisées
+                </Typography>
+                <Grid container spacing={2}>
+                  {analysisData.recommendations.slice(0, 3).map((rec, index) => (
+                    <Grid item xs={12} md={4} key={index}>
+                      <RecommendationCard
+                        sx={{
+                          background: index === 0 
+                            ? 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)'
+                            : index === 1
+                            ? 'linear-gradient(135deg, #3b82f6 0%, #2dd4bf 100%)'
+                            : 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',
+                        }}
+                      >
                         <Box sx={{ mb: 2 }}>
-                          <Typography variant="subtitle2" color="success.main">
-                            Points en amélioration :
+                          <Lightbulb
+                            size={32}
+                            color="white"
+                            style={{ marginBottom: '8px' }}
+                          />
+                          <Typography variant="h6" sx={{ color: 'white', fontWeight: 600, mb: 1 }}>
+                            {rec.recommendation}
                           </Typography>
-                          {analysisData.progress.improved.map((trait) => (
-                            <Chip
-                              key={trait}
-                              label={trait}
-                              color="success"
-                              size="small"
-                              sx={{ m: 0.5 }}
-                            />
+                        </Box>
+                        <Box sx={{
+                          p: 2,
+                          bgcolor: 'rgba(255,255,255,0.1)',
+                          borderRadius: 2,
+                        }}>
+                          {rec.examples.map((example, idx) => (
+                            <Typography
+                              key={idx}
+                              variant="body2"
+                              sx={{
+                                color: 'white',
+                                opacity: 0.9,
+                                mb: 1,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1,
+                              }}
+                            >
+                              <Star size={16} />
+                              {example}
+                            </Typography>
                           ))}
                         </Box>
-                      )}
-                    </Box>
-                  </StyledPaper>
-                </Grid>
-
-                {/* Points forts */}
-                <Grid item xs={12}>
-                  <StyledPaper>
-                    <Typography variant="h6" gutterBottom className="flex items-center gap-2">
-                      <ThumbsUp className="w-5 h-5 text-green-500" />
-                      Points forts de la relation
-                    </Typography>
-                    <Box sx={{ 
-                      display: 'flex', 
-                      flexWrap: 'wrap', 
-                      gap: 1,
-                      mb: 3 
-                    }}>
-                      {analysisData.strengths.map((strength, index) => (
-                        <Chip
-                          key={index}
-                          label={strength}
-                          color="success"
-                          sx={{ 
-                            borderRadius: '8px',
-                            fontSize: '0.9rem',
-                            py: 0.5
-                          }}
-                        />
-                      ))}
-                    </Box>
-                  </StyledPaper>
-                </Grid>
-
-                {/* Points à améliorer */}
-                <Grid item xs={12}>
-                  <StyledPaper>
-                    <Typography variant="h6" gutterBottom className="flex items-center gap-2">
-                      <ThumbsDown className="w-5 h-5 text-red-500" />
-                      Points à améliorer
-                    </Typography>
-                    <Box sx={{ 
-                      display: 'flex', 
-                      flexWrap: 'wrap', 
-                      gap: 1,
-                      mb: 3 
-                    }}>
-                      {analysisData.weaknesses.map((weakness, index) => (
-                        <Chip
-                          key={index}
-                          label={weakness}
-                          color="error"
-                          variant="outlined"
-                          sx={{ 
-                            borderRadius: '8px',
-                            fontSize: '0.9rem',
-                            py: 0.5
-                          }}
-                        />
-                      ))}
-                    </Box>
-                  </StyledPaper>
-                </Grid>
-
-                {/* Recommandations */}
-                <Grid item xs={12}>
-                  <StyledPaper>
-                    <Typography variant="h6" gutterBottom className="flex items-center gap-2">
-                      <Lightbulb className="w-5 h-5 text-yellow-500" />
-                      Recommandations pour améliorer la relation
-                    </Typography>
-                    <Box sx={{ mt: 2 }}>
-                      {analysisData.recommendations.map((recommendation, index) => (
-                        <Box
-                          key={index}
-                          sx={{
-                            p: 2,
-                            mb: 2,
-                            bgcolor: 'background.default',
-                            borderRadius: 2,
-                            border: '1px solid',
-                            borderColor: 'divider',
-                            '&:hover': {
-                              bgcolor: 'action.hover',
-                            }
-                          }}
-                        >
-                          <Typography variant="body1">
-                            {recommendation}
-                          </Typography>
-                        </Box>
-                      ))}
-                    </Box>
-                  </StyledPaper>
+                      </RecommendationCard>
+                    </Grid>
+                  ))}
                 </Grid>
               </Grid>
-            )
+
+              {/* Bouton d'action */}
+              <Grid item xs={12}>
+                <Button
+                  variant="contained"
+                  fullWidth
+                  size="large"
+                  onClick={() => handleStartGame()}
+                  sx={{
+                    mt: 4,
+                    py: 2,
+                    background: 'linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%)',
+                    '&:hover': {
+                      background: 'linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%)',
+                    },
+                  }}
+                >
+                  Trouver une activité à faire ensemble
+                </Button>
+              </Grid>
+            </Grid>
           ) : (
             <Box sx={{ textAlign: 'center', p: 4 }}>
               <Typography variant="h6" color="text.secondary">
-                Sélectionnez un ami pour voir son analyse
+                Sélectionnez un ami pour voir l'analyse de votre relation
               </Typography>
             </Box>
           )}
         </Box>
       </Paper>
+      {showActivityModal && renderActivityModal()}
     </div>
   );
 };
