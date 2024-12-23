@@ -169,10 +169,10 @@ const AnalysisMode: React.FC = () => {
           name: selectedFriend,
           scores: averageScores,
           strengths: Object.entries(averageScores)
-            .filter(([_, score]) => score > 2.5) // Ajustez le seuil pour les points forts
+            .filter(([, score]) => score > 2.5) // Ajustez le seuil pour les points forts
             .map(([trait]) => personalityTraits.find(t => t.id === trait)?.name || trait),
           weaknesses: Object.entries(averageScores)
-            .filter(([_, score]) => score <= 2.5) // Ajustez le seuil pour les points faibles
+            .filter(([, score]) => score <= 2.5) // Ajustez le seuil pour les points faibles
             .map(([trait]) => personalityTraits.find(t => t.id === trait)?.name || trait),
           recommendations: [] as Array<{ recommendation: string; examples: string[] }>,
           progress: { 
@@ -555,7 +555,7 @@ const AnalysisMode: React.FC = () => {
                       color: 'white'
                     }}>
                       <Typography variant="body1">
-                        Félicitations ! Aucun point majeur à améliorer n'a été identifié. Continuez sur cette lancée !
+                        Félicitations ! Aucun point majeur à améliorer n&apos;a été identifié. Continuez sur cette lancée !
                       </Typography>
                     </Box>
                   )}
@@ -641,7 +641,7 @@ const AnalysisMode: React.FC = () => {
           ) : (
             <Box sx={{ textAlign: 'center', p: 4 }}>
               <Typography variant="h6" color="text.secondary">
-                Sélectionnez un ami pour voir l'analyse de votre relation
+                Sélectionnez un ami pour voir l&apos;analyse de votre relation
               </Typography>
             </Box>
           )}
