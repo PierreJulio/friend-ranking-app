@@ -2,6 +2,7 @@ import { useRouter } from 'next/router';
 import { FaExchangeAlt } from 'react-icons/fa';
 import { MdCategory, MdFormatListBulleted, MdInsights, MdGroup } from 'react-icons/md';
 import styles from '../styles/GameModeSelection.module.css';
+import SignOut from './SignOut'; // Import SignOut component
 
 export default function GameModeSelection() {
   const router = useRouter();
@@ -56,7 +57,12 @@ export default function GameModeSelection() {
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.title}>Sélectionnez un mode de jeu</h1>
+      <div className={styles.header}>
+        <h1 className={styles.title}>Sélectionnez un mode de jeu</h1>
+        <div className={styles.signOutWrapper}>
+          <SignOut className={styles.signOut} /> {/* Move SignOut button here */}
+        </div>
+      </div>
       <div className={styles.grid}>
         {gameModes.map((mode) => {
           const Icon = mode.icon;

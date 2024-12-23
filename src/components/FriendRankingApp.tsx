@@ -7,7 +7,6 @@ import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card'
 import AddFriendForm from './AddFriendForm';
 import Questionnaire from './Questionnaire';
 import FinalRanking from './FinalRanking';
-import SignOut from './SignOut';
 import RankingHistory from './RankingHistory';
 import { selectNextFriendToRate, calculateFinalRankings } from './utils';
 import { Chart as ChartJS, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend } from 'chart.js';
@@ -303,7 +302,6 @@ const FriendRankingApp = () => {
               </CardTitle>
             </div>
           </div>
-          {user && <SignOut className="ml-auto" />} {/* Utilisation de ml-auto pour aligner à droite */}
         </CardHeader>
         <CardContent className="p-8">
           {renderContent()}

@@ -6,6 +6,23 @@
   background: #f8fafc;
 }
 
+.header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.signOutWrapper {
+  position: absolute;
+  right: 0;
+}
+
+
+.signOut:hover {
+  color: #64748b;
+}
+
 .title {
   text-align: center;
   margin-bottom: 3rem;
