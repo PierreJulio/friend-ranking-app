@@ -1,8 +1,8 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserPlus, X, Swords } from 'lucide-react';
-import  Button  from '../ui/button';
-import  Input  from '../ui/input';
+import Button from '../ui/button';
+import Input from '../ui/input';
 
 interface Friend {
   id: string;

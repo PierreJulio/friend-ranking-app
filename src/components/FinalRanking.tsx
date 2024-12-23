@@ -170,13 +170,10 @@ const FinalRanking: React.FC<FinalRankingProps> = ({ finalRankings, onRestart, o
                   <div className="flex items-center space-x-4">
                     <div className="relative">
                       {ranking.avatar ? (
-                        <Image
+                        <img
                           src={ranking.avatar}
                           alt={ranking.friend}
-                          width={64}
-                          height={64}
-                          unoptimized
-                          className="rounded-full object-cover ring-2 ring-blue-100"
+                          className="w-16 h-16 rounded-full object-cover"
                         />
                       ) : (
                         <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xl font-semibold">

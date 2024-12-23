@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { auth } from '../firebaseConfig';
+import { auth, db } from '../firebaseConfig';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import AddFriendForm from './AddFriendForm';
 import Questionnaire from './Questionnaire';
@@ -15,6 +16,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Users, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/router';
 import personalityTraits from '../data/personalityTraits';
+import { firestoreService } from '../services/firestore';
 
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
 
@@ -117,23 +119,51 @@ const FriendRankingApp = () => {
     }
   };
 
-  const addFriend = () => {
+  const handleFriendChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCurrentFriend(e.target.value);
+  };
+
+  const addFriend = async () => {
     if (currentFriend.trim() !== '') {
       const isDuplicate = friends.some(friend => friend.name.toLowerCase() === currentFriend.trim().toLowerCase());
       if (isDuplicate) {
-        alert(`L'ami "${currentFriend.trim()}" existe déjà.`);
+        alert(`L'ami "${currentFriend.trim()}" existe déjà dans la liste.`);
         return;
       }
 
-      const newFriend: Friend = {
-        id: uuidv4(),
-        name: currentFriend.trim(),
-        avatar: currentAvatar ? URL.createObjectURL(currentAvatar) : null
-      };
+      if (user) {
+        try {
+          const existingFriend = await firestoreService.getFriendByName(user.uid, currentFriend.trim());
+          if (existingFriend !== null) {
+            const newFriend: Friend = {
+              id: existingFriend.id,
+              name: existingFriend.name as string,
+              avatar: currentAvatar ? URL.createObjectURL(currentAvatar) : null
+            };
 
-      setFriends([...friends, newFriend]);
-      setCurrentFriend('');
-      setCurrentAvatar(null);
+            setFriends([...friends, newFriend]);
+            setCurrentFriend('');
+            setCurrentAvatar(null);
+            return;
+          }
+
+          const newFriendId = await firestoreService.addFriend(user.uid, {
+            name: currentFriend.trim(),
+          });
+
+          const newFriend: Friend = {
+            id: newFriendId,
+            name: currentFriend.trim(),
+            avatar: currentAvatar ? URL.createObjectURL(currentAvatar) : null
+          };
+
+          setFriends([...friends, newFriend]);
+          setCurrentFriend('');
+          setCurrentAvatar(null);
+        } catch (error) {
+          console.error('Erreur lors de l\'ajout de l\'ami:', error);
+        }
+      }
     }
   };
 
@@ -157,15 +187,28 @@ const FriendRankingApp = () => {
     setQuestionsAnswered(0); // Ajout de cette ligne
   };
 
-  const handleRating = (traitId: string, friendId: string, rating: number) => {
-    setFriendRatings(prev => ({
-      ...prev,
-      [traitId]: {
-        ...prev[traitId],
-        [friendId]: rating
+  const handleRating = async (traitId: string, friendId: string, rating: number) => {
+    try {
+      setFriendRatings(prev => ({
+        ...prev,
+        [traitId]: {
+          ...prev[traitId],
+          [friendId]: rating
+        }
+      }));
+      setQuestionsAnswered(prev => prev + 1);
+
+      if (user) {
+        await firestoreService.addRating(user.uid, {
+          traitId,
+          score: rating,
+          friendId,
+          mode: 'standard'
+        });
       }
-    }));
-    setQuestionsAnswered(prev => prev + 1);
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+    }
   };
 
   const handleBackToMenu = () => {

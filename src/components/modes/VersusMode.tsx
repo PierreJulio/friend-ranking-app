@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { auth } from '../../firebaseConfig';
+import { auth, db } from '../../firebaseConfig';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
 import AddVersusForm from './AddVersusForm'; // Nous allons créer ce composant
 import SignOut from '../SignOut';
@@ -12,6 +13,7 @@ import { useRouter } from 'next/router';
 import personalityTraits from '../../data/personalityTraits';
 import VersusQuestionnaire from './VersusQuestionnaire';
 import VersusResult from './VersusResult';
+import { firestoreService } from '../../services/firestore';
 
 Chart.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
 
@@ -46,26 +48,54 @@ const VersusMode: React.FC = () => {
     }
   };
 
-  const addFriend = () => {
+  const handleFriendChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCurrentFriend(e.target.value);
+  };
+
+  const addFriend = async () => {
     if (currentFriend.trim() !== '' && friends.length < 2) {
       const isDuplicate = friends.some(friend => 
         friend.name.toLowerCase() === currentFriend.trim().toLowerCase()
       );
 
       if (isDuplicate) {
-        alert(`L'ami "${currentFriend.trim()}" existe déjà.`);
+        alert(`L'ami "${currentFriend.trim()}" existe déjà dans la liste.`);
         return;
       }
 
-      const newFriend: Friend = {
-        id: uuidv4(),
-        name: currentFriend.trim(),
-        avatar: currentAvatar ? URL.createObjectURL(currentAvatar) : null
-      };
+      if (user) {
+        try {
+          const existingFriend = await firestoreService.getFriendByName(user.uid, currentFriend.trim());
+          if (existingFriend !== null) {
+            const newFriend: Friend = {
+              id: existingFriend.id,
+              name: existingFriend.name as string,
+              avatar: currentAvatar ? URL.createObjectURL(currentAvatar) : null
+            };
 
-      setFriends([...friends, newFriend]);
-      setCurrentFriend('');
-      setCurrentAvatar(null);
+            setFriends([...friends, newFriend]);
+            setCurrentFriend('');
+            setCurrentAvatar(null);
+            return;
+          }
+
+          const newFriendId = await firestoreService.addFriend(user.uid, {
+            name: currentFriend.trim(),
+          });
+
+          const newFriend: Friend = {
+            id: newFriendId,
+            name: currentFriend.trim(),
+            avatar: currentAvatar ? URL.createObjectURL(currentAvatar) : null
+          };
+
+          setFriends([...friends, newFriend]);
+          setCurrentFriend('');
+          setCurrentAvatar(null);
+        } catch (error) {
+          console.error('Erreur lors de l\'ajout de l\'ami:', error);
+        }
+      }
     }
   };
 
@@ -82,22 +112,34 @@ const VersusMode: React.FC = () => {
     }
   };
 
-  const handleRating = (trait: string, friendId: string, rating: number) => {
-    setFriendRatings(prev => ({
-      ...prev,
-      [trait]: {
-        ...prev[trait],
-        [friendId]: rating
+  const handleRating = async (trait: string, friendId: string, rating: number) => {
+    try {
+      if (user) {
+        await firestoreService.addRating(user.uid, {
+          traitId: trait,
+          score: rating,
+          friendId,
+          mode: 'versus'
+        });
       }
-    }));
 
-    // Passer au trait suivant
-    if (currentTraitIndex !== null && 
-        currentTraitIndex < personalityTraits.length - 1) {
-      setCurrentTraitIndex(currentTraitIndex + 1);
-    } else {
-      // Comparaison terminée
-      handleShowResults();
+      // Mettre à jour l'état local
+      setFriendRatings(prev => ({
+        ...prev,
+        [trait]: {
+          ...prev[trait],
+          [friendId]: rating
+        }
+      }));
+
+      // Continuer avec la logique existante
+      if (currentTraitIndex !== null && currentTraitIndex < personalityTraits.length - 1) {
+        setCurrentTraitIndex(currentTraitIndex + 1);
+      } else {
+        handleShowResults();
+      }
+    } catch (error) {
+      console.error('Erreur:', error);
     }
   };
 

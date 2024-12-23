@@ -135,7 +135,7 @@ const VersusQuestionnaire: React.FC<VersusQuestionnaireProps> = ({
             >
               <div className="flex items-center gap-4">
                 {friend.avatar ? (
-                  <img src={friend.avatar} alt="" className="w-12 h-12 rounded-full" />
+                  <img src={friend.avatar} alt={friend.name} className="w-12 h-12 rounded-full object-cover" />
                 ) : (
                   <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
                     <span className="text-2xl font-bold text-white">

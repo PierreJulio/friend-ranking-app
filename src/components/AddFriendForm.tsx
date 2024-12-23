@@ -1,11 +1,14 @@
 import React, { ChangeEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserPlus, Trash, Upload } from 'lucide-react';
-import { collection, addDoc } from 'firebase/firestore';
-import { db } from '../firebaseConfig';
 import Input from '../components/ui/input';
 import Button from '../components/ui/button';
-import Image from 'next/image';
+
+interface Friend {
+  id: string;
+  name: string;
+  avatar: string | null;
+}
 
 interface AddFriendFormProps {
   currentFriend: string;
@@ -13,7 +16,7 @@ interface AddFriendFormProps {
   handleAvatarChange: (e: ChangeEvent<HTMLInputElement>) => void;
   currentAvatar: File | null;
   addFriend: () => void;
-  friends: { id: string; name: string; avatar: string | null }[];
+  friends: Friend[];
   removeFriend: (friendId: string) => void;
   startQuestionnaire: () => void;
   userId: string;
@@ -30,19 +33,6 @@ const AddFriendForm: React.FC<AddFriendFormProps> = ({
   startQuestionnaire,
   userId
 }) => {
-  const saveFriend = async (friend: { id: string; name: string; avatar: string | null }) => {
-    await addDoc(collection(db, 'friends'), {
-      userId,
-      ...friend
-    });
-  };
-
-  const handleAddFriend = () => {
-    addFriend();
-    const newFriend = friends[friends.length - 1];
-    saveFriend(newFriend);
-  };
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -91,13 +81,10 @@ const AddFriendForm: React.FC<AddFriendFormProps> = ({
                 exit={{ opacity: 0, scale: 0.8 }}
                 className="mt-3 flex justify-center"
               >
-                <Image
+                <img
                   src={URL.createObjectURL(currentAvatar)}
                   alt="Aperçu Avatar"
-                  width={96}
-                  height={96}
-                  unoptimized
-                  className="rounded-full object-cover ring-2 ring-blue-500"
+                  className="w-24 h-24 rounded-full object-cover ring-2 ring-blue-500"
                 />
               </motion.div>
             )}
@@ -105,7 +92,7 @@ const AddFriendForm: React.FC<AddFriendFormProps> = ({
         </div>
 
         <Button 
-          onClick={handleAddFriend}
+          onClick={addFriend}
           className="w-full bg-blue-500 hover:bg-blue-600 text-white transition-colors py-2 rounded-lg flex items-center justify-center"
         >
           <UserPlus className="mr-2" /> Ajouter
@@ -129,13 +116,10 @@ const AddFriendForm: React.FC<AddFriendFormProps> = ({
               >
                 <div className="flex items-center space-x-4">
                   {friend.avatar ? (
-                    <Image
+                    <img
                       src={friend.avatar}
                       alt={friend.name}
-                      width={48}
-                      height={48}
-                      unoptimized
-                      className="rounded-full object-cover ring-2 ring-gray-200"
+                      className="w-12 h-12 rounded-full object-cover"
                     />
                   ) : (
                     <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
