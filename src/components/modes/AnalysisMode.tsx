@@ -62,13 +62,6 @@ interface FriendAnalysis {
   recommendations: Array<{ recommendation: string; examples: string[] }>;
 }
 
-interface RatingHistory {
-  timestamp: number;
-  scores: {
-    [trait: string]: number;
-  };
-}
-
 interface EnhancedFriendAnalysis extends FriendAnalysis {
   progress: {
     improved: Array<string>;
@@ -91,7 +84,6 @@ const AnalysisMode: React.FC = () => {
   const [friendsList, setFriendsList] = useState<FriendData[]>([]);
   const [analysisData, setAnalysisData] = useState<EnhancedFriendAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
-  const [gamificationPoints, setGamificationPoints] = useState<number>(0);
   const [showActivityModal, setShowActivityModal] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState<ImprovementActivity | null>(null);
 
@@ -173,20 +165,15 @@ const AnalysisMode: React.FC = () => {
 
         console.log("Scores moyens par trait:", averageScores);
 
-        const history = [{
-          timestamp: Date.now() / 1000,
-          scores: averageScores
-        }];
-
         const analysis: EnhancedFriendAnalysis = {
           name: selectedFriend,
           scores: averageScores,
           strengths: Object.entries(averageScores)
             .filter(([_, score]) => score > 2.5) // Ajustez le seuil pour les points forts
-            .map(([trait, _]) => personalityTraits.find(t => t.id === trait)?.name || trait),
+            .map(([trait]) => personalityTraits.find(t => t.id === trait)?.name || trait),
           weaknesses: Object.entries(averageScores)
             .filter(([_, score]) => score <= 2.5) // Ajustez le seuil pour les points faibles
-            .map(([trait, _]) => personalityTraits.find(t => t.id === trait)?.name || trait),
+            .map(([trait]) => personalityTraits.find(t => t.id === trait)?.name || trait),
           recommendations: [] as Array<{ recommendation: string; examples: string[] }>,
           progress: { 
             improved: [] as Array<string>, 
@@ -199,7 +186,7 @@ const AnalysisMode: React.FC = () => {
         analysis.recommendations = generateRecommendations(analysis.weaknesses, analysis.progress.improved);
         setAnalysisData(analysis);
       } catch (error) {
-        console.error('Erreur lors de l&#39;analyse:', error);
+        console.error('Erreur lors de l\'analyse:', error);
         setAnalysisData(null);
       }
       setLoading(false);
@@ -207,20 +194,6 @@ const AnalysisMode: React.FC = () => {
 
     analyzeData();
   }, [selectedFriend]);
-
-  useEffect(() => {
-    // Exemple : Lorsque la liste d’amis est chargée, on octroie quelques points de base
-    if (friendsList.length > 0) {
-      setGamificationPoints(prev => prev + 5);
-    }
-  }, [friendsList]);
-
-  useEffect(() => {
-    // Exemple : Lorsque l’analyse est terminée, on ajoute un bonus de points
-    if (!loading && analysisData) {
-      setGamificationPoints(prev => prev + 10);
-    }
-  }, [loading, analysisData]);
 
   const generateRecommendations = (weaknesses: string[], improved: string[]): Array<{ recommendation: string; examples: string[] }> => {
     let recommendationsList: Array<{ recommendation: string; examples: string[] }> = [];
@@ -269,46 +242,6 @@ const AnalysisMode: React.FC = () => {
       setSelectedActivity(relevantActivities[randomIndex]);
       setShowActivityModal(true);
     }
-  };
-
-  const DifficultyChip = ({ difficulty }: { difficulty: string }) => {
-    const colors = {
-      easy: { bg: '#4CAF50', text: 'Facile' },
-      medium: { bg: '#FF9800', text: 'Moyen' },
-      hard: { bg: '#f44336', text: 'Difficile' }
-    };
-    
-    return (
-      <Chip
-        label={colors[difficulty as keyof typeof colors].text}
-        sx={{
-          bgcolor: colors[difficulty as keyof typeof colors].bg,
-          color: 'white',
-          fontWeight: 'bold',
-          fontSize: '0.75rem'
-        }}
-      />
-    );
-  };
-  
-  const DurationChip = ({ duration }: { duration: string }) => {
-    const colors = {
-      short: { bg: '#81c784', text: 'Court terme' },
-      medium: { bg: '#4dabf5', text: 'Moyen terme' },
-      long: { bg: '#9575cd', text: 'Long terme' }
-    };
-    
-    return (
-      <Chip
-        label={colors[duration as keyof typeof colors].text}
-        sx={{
-          bgcolor: colors[duration as keyof typeof colors].bg,
-          color: 'white',
-          fontWeight: 'bold',
-          fontSize: '0.75rem'
-        }}
-      />
-    );
   };
   
   // Remplacez le renderActivityModal existant par celui-ci
@@ -439,7 +372,6 @@ const AnalysisMode: React.FC = () => {
             startIcon={<Play size={18} />}
             onClick={() => {
               setShowActivityModal(false);
-              setGamificationPoints(prev => prev + 10);
             }}
             sx={{
               background: 'linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%)',

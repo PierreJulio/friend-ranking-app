@@ -72,7 +72,6 @@ const VersusResult: React.FC<VersusResultProps> = ({
   onRestart,
   onNewComparison,
 }) => {
-  const [winner, runnerUp] = friends;
   const traits = Object.keys(ratings);
 
   const getTraitName = (traitId: string) => {
@@ -286,7 +285,7 @@ const VersusResult: React.FC<VersusResultProps> = ({
           className="border-2 border-gray-300 hover:border-gray-400 px-8 py-4 
                    rounded-xl transition-all duration-300 font-semibold"
         >
-          Choisir d'autres amis
+          Choisir d&apos;autres amis
         </Button>
       </motion.div>
     </motion.div>

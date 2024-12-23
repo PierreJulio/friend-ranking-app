@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { auth, db } from '../firebaseConfig';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { auth } from '../firebaseConfig';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import AddFriendForm from './AddFriendForm';
 import Questionnaire from './Questionnaire';
@@ -12,7 +11,6 @@ import SignOut from './SignOut';
 import RankingHistory from './RankingHistory';
 import { selectNextFriendToRate, calculateFinalRankings } from './utils';
 import { Chart as ChartJS, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend } from 'chart.js';
-import { v4 as uuidv4 } from 'uuid';
 import { Users, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/router';
 import personalityTraits from '../data/personalityTraits';
@@ -117,10 +115,6 @@ const FriendRankingApp = () => {
     if (e.target.files && e.target.files[0]) {
       setCurrentAvatar(e.target.files[0]);
     }
-  };
-
-  const handleFriendChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCurrentFriend(e.target.value);
   };
 
   const addFriend = async () => {
