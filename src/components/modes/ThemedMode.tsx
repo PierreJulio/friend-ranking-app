@@ -75,6 +75,20 @@ const ThemedMode: React.FC = () => {
     if (currentFriend.trim() !== '') {
       if (user) {
         try {
+          // Check if friend already exists
+          const existingFriend = await firestoreService.getFriendByName(user.uid, currentFriend.trim());
+          if (existingFriend) {
+            const friend: Friend = {
+              id: existingFriend.id,
+              name: existingFriend.name,
+              avatar: null
+            };
+            setFriends([...friends, friend]);
+            setCurrentFriend('');
+            setCurrentAvatar(null);
+            return;
+          }
+
           const newFriendId = await firestoreService.addFriend(user.uid, {
             name: currentFriend.trim(),
           });

@@ -101,13 +101,13 @@ const ThemedQuestionnaire: React.FC<ThemedQuestionnaireProps> = ({
                     <Rating
                       value={ratings[friend.id] || 0}
                       onChange={(_, newValue) => onRate(friend.id, newValue || 0)}
-                      max={10}
+                      max={5} // Change max value to 5
                       size="large"
                       className="transform scale-90 sm:scale-100"
                     />
                     {ratings[friend.id] && (
                       <Typography variant="body2" className="text-blue-600 font-medium">
-                        Note: {ratings[friend.id]}/10
+                        Note: {ratings[friend.id]}/5 {/* Change text to "Note: {ratings[friend.id]}/5" */}
                       </Typography>
                     )}
                   </div>

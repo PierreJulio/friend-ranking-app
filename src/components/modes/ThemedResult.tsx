@@ -87,7 +87,7 @@ const ThemedResult: React.FC<ThemedResultProps> = ({
     scales: {
       y: {
         beginAtZero: true,
-        max: 10,
+        max: 5, // Change max value to 5
         grid: {
           display: true,
           color: 'rgba(0, 0, 0, 0.1)',
@@ -203,7 +203,7 @@ const ThemedResult: React.FC<ThemedResultProps> = ({
                         {ratings[friend.id]}
                       </Typography>
                       <Typography variant="caption" className="text-blue-400">
-                        sur 10
+                        sur 5 {/* Change text to "sur 5" */}
                       </Typography>
                     </div>
                   </div>
