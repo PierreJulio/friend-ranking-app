@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Paper, Typography, Grid, CircularProgress, Chip, Select, MenuItem, FormControl, InputLabel, Avatar, Button, IconButton } from '@mui/material';
-import { ArrowLeft, Target, Lightbulb, ThumbsUp, ThumbsDown, TrendingUp, Award, Star, Trophy, X, ListChecks, Play, Shuffle } from 'lucide-react';
+import { ArrowLeft, Target, Lightbulb, ThumbsUp, Star, X, ListChecks, Play, Shuffle } from 'lucide-react';
 import { styled } from '@mui/material/styles';
 import { useRouter } from 'next/router';
 import { db } from '../../firebaseConfig';
@@ -111,11 +111,6 @@ interface FriendData {
   hasEvaluation: boolean;
 }
 
-interface QuizQuestion {
-  question: string;
-  options: string[];
-}
-
 const AnalysisMode: React.FC = () => {
   const router = useRouter();
   const [selectedFriend, setSelectedFriend] = useState<string | null>(null);
@@ -125,28 +120,8 @@ const AnalysisMode: React.FC = () => {
   const [ratingHistory, setRatingHistory] = useState<RatingHistory[]>([]);
   const [gamificationPoints, setGamificationPoints] = useState<number>(0);
   const [showConfetti, setShowConfetti] = useState<boolean>(false);
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [gameCompleted, setGameCompleted] = useState<boolean>(false);
-  const [quizStep, setQuizStep] = useState<number>(0);
-  const [quizAnswers, setQuizAnswers] = useState<string[]>([]);
-  const [recommendedActivity, setRecommendedActivity] = useState<string>('');
-  const [selectedActivity, setSelectedActivity] = useState<ImprovementActivity | null>(null);
   const [showActivityModal, setShowActivityModal] = useState(false);
-
-  const quizQuestions: QuizQuestion[] = [
-    {
-      question: "Quel type d'activités préférez-vous faire ensemble ?",
-      options: ['Sports', 'Culture', 'Gastronomie', 'Nature']
-    },
-    {
-      question: "Quels sont vos centres d'intérêt communs ?",
-      options: ['Musique', 'Films', 'Lecture', 'Jeux vidéo']
-    },
-    {
-      question: "Dans quel environnement êtes-vous le plus à l'aise ensemble ?",
-      options: ['En ville', 'À la maison', 'En plein air', 'Dans des lieux animés']
-    }
-  ];
+  const [selectedActivity, setSelectedActivity] = useState<ImprovementActivity | null>(null);
 
   useEffect(() => {
     const loadFriendsWithEvaluations = async () => {
@@ -327,102 +302,11 @@ const AnalysisMode: React.FC = () => {
     );
     
     if (relevantActivities.length > 0) {
-      // Sélectionner une activité aléatoire parmi les plus pertinentes
       const randomIndex = Math.floor(Math.random() * relevantActivities.length);
       setSelectedActivity(relevantActivities[randomIndex]);
-      // Stocker l'activité sélectionnée pour éviter les répétitions
-      const previousActivities = localStorage.getItem('previousActivities') 
-        ? JSON.parse(localStorage.getItem('previousActivities') || '[]')
-        : [];
-      
-      previousActivities.push(relevantActivities[randomIndex].title);
-      // Garder seulement les 5 dernières activités
-      if (previousActivities.length > 5) {
-        previousActivities.shift();
-      }
-      localStorage.setItem('previousActivities', JSON.stringify(previousActivities));
-      
       setShowActivityModal(true);
     }
   };
-
-  // Ajoutez cette fonction pour vérifier si une activité a été récemment proposée
-  const wasRecentlyProposed = (activity: ImprovementActivity): boolean => {
-    const previousActivities = JSON.parse(localStorage.getItem('previousActivities') || '[]');
-    return previousActivities.includes(activity.title);
-  };
-
-  const handleGameComplete = () => {
-    setIsPlaying(false);
-    setGameCompleted(true);
-    // Optionally add gamification points
-    setGamificationPoints(prev => prev + 5);
-  };
-
-  const handleQuizAnswer = (answer: string) => {
-    setQuizAnswers([...quizAnswers, answer]);
-    if (quizStep < quizQuestions.length - 1) {
-      setQuizStep(quizStep + 1);
-    } else {
-      generateRecommendation();
-    }
-  };
-
-  const generateRecommendation = () => {
-    // Logique pour générer une recommandation basée sur les réponses
-    const activities = {
-      'Sports': ['Cours de yoga en duo', 'Partie de tennis', 'Randonnée'],
-      'Culture': ['Visite de musée', 'Concert', 'Cours de peinture'],
-      'Gastronomie': ['Cours de cuisine', 'Dégustation de vins', 'Restaurant découverte'],
-      'Nature': ['Jardinage', 'Pique-nique', 'Observation des étoiles']
-    };
-
-    const preferredCategory = quizAnswers[0] as keyof typeof activities;
-    const activitiesList = activities[preferredCategory] || [];
-    const randomActivity = activitiesList[Math.floor(Math.random() * activitiesList.length)];
-    setRecommendedActivity(randomActivity);
-    setGameCompleted(true);
-  };
-
-  const renderQuiz = () => (
-    <Box sx={{ mt: 4, p: 3, bgcolor: 'background.paper', borderRadius: 2 }}>
-      <Typography variant="h6" gutterBottom>
-        Question {quizStep + 1}/{quizQuestions.length}
-      </Typography>
-      <Typography variant="body1" sx={{ mb: 3 }}>
-        {quizQuestions[quizStep].question}
-      </Typography>
-      <Grid container spacing={2}>
-        {quizQuestions[quizStep].options.map((option) => (
-          <Grid item xs={6} key={option}>
-            <Button
-              fullWidth
-              variant="outlined"
-              onClick={() => handleQuizAnswer(option)}
-              sx={{ py: 2 }}
-            >
-              {option}
-            </Button>
-          </Grid>
-        ))}
-      </Grid>
-    </Box>
-  );
-
-  const renderRecommendation = () => (
-    <Box sx={{ mt: 4, p: 3, bgcolor: 'background.paper', borderRadius: 2 }}>
-      <Typography variant="h5" gutterBottom color="primary">
-        Activité recommandée pour renforcer votre relation
-      </Typography>
-      <Typography variant="h6" sx={{ mt: 2 }}>
-        {recommendedActivity}
-      </Typography>
-      <Typography variant="body1" sx={{ mt: 2, color: 'text.secondary' }}>
-        Cette activité a été choisie en fonction de vos réponses et des points à améliorer
-        dans votre relation.
-      </Typography>
-    </Box>
-  );
 
   const DifficultyChip = ({ difficulty }: { difficulty: string }) => {
     const colors = {
