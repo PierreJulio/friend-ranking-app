@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Paper, Typography, Grid, CircularProgress, Chip, Select, MenuItem, FormControl, InputLabel, Avatar, Button, IconButton } from '@mui/material';
+import { Box, Paper, Typography, Grid, CircularProgress, Chip, Select, MenuItem, FormControl, Avatar, Button, IconButton } from '@mui/material';
 import { ArrowLeft, Target, Lightbulb, ThumbsUp, Star, X, ListChecks, Play, Shuffle } from 'lucide-react';
 import { styled } from '@mui/material/styles';
 import { useRouter } from 'next/router';
@@ -7,9 +7,7 @@ import { db } from '../../firebaseConfig';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import personalityTraits from '../../data/personalityTraits';
 import recommendations from '../../data/recommendations';
-import ReactConfetti from 'react-confetti';
-import { LinearProgress } from '@mui/material';
-import { getRelevantActivities, improvementActivities, ImprovementActivity } from '../../data/relationshipImprovements';
+import { getRelevantActivities, ImprovementActivity } from '../../data/relationshipImprovements';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(3),
@@ -21,18 +19,6 @@ const StyledPaper = styled(Paper)(({ theme }) => ({
   backgroundColor: 'rgba(255, 255, 255, 0.95)',
   backdropFilter: 'blur(10px)',
   boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
-}));
-
-const ModernChip = styled(Chip)(({ theme }) => ({
-  borderRadius: '20px',
-  height: '32px',
-  '& .MuiChip-label': {
-    padding: '0 16px',
-  },
-  transition: 'all 0.2s ease',
-  '&:hover': {
-    transform: 'translateY(-2px)',
-  },
 }));
 
 const RecommendationCard = styled(Box)(({ theme }) => ({
@@ -64,18 +50,6 @@ const CompactModal = styled(Box)(({ theme }) => ({
   overflow: 'hidden',
   display: 'flex',
   flexDirection: 'column',
-}));
-
-const ImpactBadge = styled(Box)(({ theme }) => ({
-  padding: theme.spacing(1, 2),
-  borderRadius: theme.shape.borderRadius * 4,
-  backgroundColor: theme.palette.primary.main,
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: theme.spacing(1),
-  margin: theme.spacing(0.5),
-  flexWrap: 'wrap',
-  fontSize: '0.875rem',
 }));
 
 interface FriendAnalysis {
@@ -117,9 +91,7 @@ const AnalysisMode: React.FC = () => {
   const [friendsList, setFriendsList] = useState<FriendData[]>([]);
   const [analysisData, setAnalysisData] = useState<EnhancedFriendAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
-  const [ratingHistory, setRatingHistory] = useState<RatingHistory[]>([]);
   const [gamificationPoints, setGamificationPoints] = useState<number>(0);
-  const [showConfetti, setShowConfetti] = useState<boolean>(false);
   const [showActivityModal, setShowActivityModal] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState<ImprovementActivity | null>(null);
 
@@ -226,9 +198,8 @@ const AnalysisMode: React.FC = () => {
 
         analysis.recommendations = generateRecommendations(analysis.weaknesses, analysis.progress.improved);
         setAnalysisData(analysis);
-        setRatingHistory(history);
       } catch (error) {
-        console.error('Erreur lors de l\'analyse:', error);
+        console.error('Erreur lors de l&#39;analyse:', error);
         setAnalysisData(null);
       }
       setLoading(false);
@@ -243,14 +214,6 @@ const AnalysisMode: React.FC = () => {
       setGamificationPoints(prev => prev + 5);
     }
   }, [friendsList]);
-
-  useEffect(() => {
-    // Si on a beaucoup gagné de points, on déclenche un effet "confetti"
-    if (gamificationPoints >= 20) {
-      setShowConfetti(true);
-      setTimeout(() => setShowConfetti(false), 3000);
-    }
-  }, [gamificationPoints]);
 
   useEffect(() => {
     // Exemple : Lorsque l’analyse est terminée, on ajoute un bonus de points

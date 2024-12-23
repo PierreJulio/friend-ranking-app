@@ -52,12 +52,10 @@ const ThemedMode: React.FC = () => {
   const [currentFriend, setCurrentFriend] = useState('');
   const [currentAvatar, setCurrentAvatar] = useState<File | null>(null);
   const [selectedTrait, setSelectedTrait] = useState<string | null>(null);
-  const [showQuestionnaire, setShowQuestionnaire] = useState(false);
-  const [showResults, setShowResults] = useState(false);
-  const [ratings, setRatings] = useState<{ [key: string]: number }>({});
   const [step, setStep] = useState<'select-theme' | 'add-friends' | 'questionnaire' | 'results'>('select-theme');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [currentQuestionRatings, setCurrentQuestionRatings] = useState<{ [friendId: string]: number }>({});
+  const [ratings, setRatings] = useState<{ [friendId: string]: number }>({});
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -154,8 +152,6 @@ const ThemedMode: React.FC = () => {
   const handleRestart = () => {
     setFriends([]);
     setSelectedTrait(null);
-    setShowQuestionnaire(false);
-    setShowResults(false);
     setRatings({});
   };
 
@@ -188,9 +184,9 @@ const ThemedMode: React.FC = () => {
                       cursor: 'pointer',
                       transition: 'all 0.2s ease-in-out',
                       borderRadius: 2,
-                      border: t => selectedTrait === trait.id ? '2px solid' : '1px solid',
-                      borderColor: t => selectedTrait === trait.id ? 'primary.main' : 'grey.200',
-                      backgroundColor: t => selectedTrait === trait.id ? 'rgba(25, 118, 210, 0.08)' : 'background.paper',
+                      border: selectedTrait === trait.id ? '2px solid' : '1px solid',
+                      borderColor: selectedTrait === trait.id ? 'primary.main' : 'grey.200',
+                      backgroundColor: selectedTrait === trait.id ? 'rgba(25, 118, 210, 0.08)' : 'background.paper',
                       '&:hover': {
                         transform: 'translateY(-4px)',
                         boxShadow: 4,
@@ -252,7 +248,6 @@ const ThemedMode: React.FC = () => {
               friends={friends}
               removeFriend={removeFriend}
               startQuestionnaire={startEvaluation}
-              userId={user?.uid || ''}
             />
           </Box>
         );

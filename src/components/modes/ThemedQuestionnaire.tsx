@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, CardContent } from '../ui/card';
-import { Typography, Rating, Avatar, LinearProgress } from '@mui/material';
+import { Typography, Rating, Avatar } from '@mui/material';
 import { motion } from 'framer-motion';
 import personalityTraits from '../../data/personalityTraits';
 

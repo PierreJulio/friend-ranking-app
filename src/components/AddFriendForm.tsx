@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { UserPlus, Trash, Upload } from 'lucide-react';
 import Input from '../components/ui/input';
 import Button from '../components/ui/button';
+import Image from "next/image";
 
 interface Friend {
   id: string;
@@ -19,7 +20,6 @@ interface AddFriendFormProps {
   friends: Friend[];
   removeFriend: (friendId: string) => void;
   startQuestionnaire: () => void;
-  userId: string;
 }
 
 const AddFriendForm: React.FC<AddFriendFormProps> = ({
@@ -30,8 +30,7 @@ const AddFriendForm: React.FC<AddFriendFormProps> = ({
   addFriend,
   friends,
   removeFriend,
-  startQuestionnaire,
-  userId
+  startQuestionnaire
 }) => {
   return (
     <motion.div
@@ -81,9 +80,11 @@ const AddFriendForm: React.FC<AddFriendFormProps> = ({
                 exit={{ opacity: 0, scale: 0.8 }}
                 className="mt-3 flex justify-center"
               >
-                <img
-                  src={URL.createObjectURL(currentAvatar)}
+                <Image
+                  src={URL.createObjectURL(currentAvatar) ?? ""}
                   alt="Aperçu Avatar"
+                  width={96}
+                  height={96}
                   className="w-24 h-24 rounded-full object-cover ring-2 ring-blue-500"
                 />
               </motion.div>
@@ -116,9 +117,11 @@ const AddFriendForm: React.FC<AddFriendFormProps> = ({
               >
                 <div className="flex items-center space-x-4">
                   {friend.avatar ? (
-                    <img
+                    <Image
                       src={friend.avatar}
                       alt={friend.name}
+                      width={48}
+                      height={48}
                       className="w-12 h-12 rounded-full object-cover"
                     />
                   ) : (

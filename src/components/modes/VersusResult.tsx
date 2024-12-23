@@ -11,8 +11,8 @@ import {
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import Button from '../ui/button';
-import { ChartOptions } from 'chart.js';
-import { Trophy, RefreshCw, Medal } from 'lucide-react';
+import { ChartOptions, TooltipItem } from 'chart.js';
+import { Trophy, RefreshCw } from 'lucide-react';
 import personalityTraits from '../../data/personalityTraits';
 
 // Enregistrer les composants nécessaires pour Chart.js
@@ -37,14 +37,6 @@ interface VersusResultProps {
   onNewComparison: () => void;
 }
 
-const getVictoryText = (score: number, total: number) => {
-  const ratio = score / total;
-  if (ratio === 1) return { text: "Victoire totale", color: "from-green-500 to-emerald-500" };
-  if (ratio >= 0.66) return { text: "Victoire nette", color: "from-blue-500 to-cyan-500" };
-  if (ratio > 0.33) return { text: "Légère victoire", color: "from-yellow-500 to-orange-500" };
-  return { text: "Égalité", color: "from-gray-400 to-gray-500" };
-};
-
 const getComparisonResult = (victories: number) => {
   switch (victories) {
     case 3:
@@ -67,7 +59,7 @@ const getComparisonResult = (victories: number) => {
       };
     default:
       return {
-        text: "N'a pas dominé",
+        text: "N&#39;a pas dominé",
         color: "from-red-400 to-red-500",
         description: "N'a gagné aucune comparaison"
       };
@@ -86,13 +78,6 @@ const VersusResult: React.FC<VersusResultProps> = ({
   const getTraitName = (traitId: string) => {
     const trait = personalityTraits.find(t => t.id === traitId);
     return trait ? trait.name : traitId;
-  };
-
-  const calculateTraitScore = (trait: string, friendId: string) => {
-    const questionsPerTrait = 3;
-    const rawScore = ratings[trait][friendId] || 0;
-    // Convertir le nombre de victoires (0-3) en pourcentage
-    return (rawScore / questionsPerTrait) * 100;
   };
 
   const chartData = {
@@ -149,7 +134,7 @@ const VersusResult: React.FC<VersusResultProps> = ({
       },
       tooltip: {
         callbacks: {
-          label: (context: any) => {
+          label: (context: TooltipItem<'bar'>) => {
             const victories = Math.round((context.parsed.y * 3) / 100);
             return `${context.dataset.label}: ${victories}/3 victoires`;
           }

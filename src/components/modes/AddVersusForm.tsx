@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { UserPlus, X, Swords } from 'lucide-react';
 import Button from '../ui/button';
 import Input from '../ui/input';
+import Image from 'next/image';
 
 interface Friend {
   id: string;
@@ -104,9 +105,11 @@ const AddVersusForm: React.FC<AddVersusFormProps> = ({
               </button>
               <div className="flex items-center gap-3">
                 {friend.avatar ? (
-                  <img
+                  <Image
                     src={friend.avatar}
                     alt={friend.name}
+                    width={48}
+                    height={48}
                     className="w-12 h-12 rounded-full object-cover"
                   />
                 ) : (

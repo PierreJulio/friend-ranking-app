@@ -189,13 +189,14 @@ const FriendRankingApp = () => {
 
   const handleRating = async (traitId: string, friendId: string, rating: number) => {
     try {
-      setFriendRatings(prev => ({
-        ...prev,
-        [traitId]: {
-          ...prev[traitId],
-          [friendId]: rating
+      setFriendRatings(prev => {
+        const updatedRatings = { ...prev };
+        if (!updatedRatings[traitId]) {
+          updatedRatings[traitId] = {};
         }
-      }));
+        updatedRatings[traitId][friendId] = rating;
+        return updatedRatings;
+      });
       setQuestionsAnswered(prev => prev + 1);
 
       if (user) {
@@ -284,7 +285,6 @@ const FriendRankingApp = () => {
           friends={friends}
           removeFriend={removeFriend}
           startQuestionnaire={startQuestionnaire}
-          userId={user.uid}
         />
       );
     }

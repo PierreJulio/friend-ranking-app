@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
 import { auth } from '../../firebaseConfig';
-import { firestoreService } from '../../services/firestore';
+import { firestoreService, Friend } from '../../services/firestore';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
 import { Users, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/router';
 
+interface FriendWithRatings extends Friend {
+  ratings: { traitId: string; score: number }[];
+}
+
 export default function FriendsManagement() {
-  const [friends, setFriends] = useState<any[]>([]);
+  const [friends, setFriends] = useState<FriendWithRatings[]>([]);
   const [newFriendName, setNewFriendName] = useState('');
   const router = useRouter();
 

@@ -35,8 +35,8 @@ class FirestoreService {
       const snapshot = await getDocs(q);
       if (!snapshot.empty) {
         const doc = snapshot.docs[0];
-        const { id, ...data } = doc.data() as Friend;
-        return { id: doc.id, ...data };
+        const data = doc.data() as Friend;
+        return { id: doc.id, name: data.name };
       }
       return null;
     } catch (error) {
@@ -66,10 +66,11 @@ class FirestoreService {
       const friendsWithRatings = Array.from(friends.values()).map(friend => ({
         ...friend,
         ratings: ratingsSnapshot.docs
-          .filter(doc => doc.data().friendId === friend.id)
+          .filter(doc => doc.data().friendId === friend.id && doc.data().mode)
           .map(doc => ({
             traitId: doc.data().traitId,
-            score: doc.data().score
+            score: doc.data().score,
+            mode: doc.data().mode
           }))
       }));
 

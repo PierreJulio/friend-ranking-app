@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { auth, db } from '../../firebaseConfig';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { auth } from '../../firebaseConfig';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
 import AddVersusForm from './AddVersusForm'; // Nous allons créer ce composant
 import SignOut from '../SignOut';
-import { selectNextFriendToRate, calculateFinalRankings } from '../utils';
 import { Chart, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend } from 'chart.js';
-import { v4 as uuidv4 } from 'uuid';
-import { Users, Swords, ArrowLeft } from 'lucide-react';
+import { Swords, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/router';
 import personalityTraits from '../../data/personalityTraits';
 import VersusQuestionnaire from './VersusQuestionnaire';
@@ -46,10 +43,6 @@ const VersusMode: React.FC = () => {
     if (e.target.files && e.target.files[0]) {
       setCurrentAvatar(e.target.files[0]);
     }
-  };
-
-  const handleFriendChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCurrentFriend(e.target.value);
   };
 
   const addFriend = async () => {
@@ -124,17 +117,17 @@ const VersusMode: React.FC = () => {
       }
 
       // Mettre à jour l'état local
-      setFriendRatings(prev => ({
-        ...prev,
-        [trait]: {
-          ...prev[trait],
-          [friendId]: rating
+      setFriendRatings(prev => {
+        const updatedRatings = { ...prev };
+        if (!updatedRatings[trait]) {
+          updatedRatings[trait] = {};
         }
-      }));
+        updatedRatings[trait][friendId] = rating;
+        return updatedRatings;
+      });
 
       // Continuer avec la logique existante
       if (currentTraitIndex !== null && currentTraitIndex < personalityTraits.length - 1) {
-        setCurrentTraitIndex(currentTraitIndex + 1);
       } else {
         handleShowResults();
       }

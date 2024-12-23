@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Progress } from '../ui/progress';
 import Button from '../ui/button';
-import personalityTraits from '../../data/personalityTraits';
+import Image from 'next/image';
 
 interface Friend {
   id: string;
@@ -135,7 +135,13 @@ const VersusQuestionnaire: React.FC<VersusQuestionnaireProps> = ({
             >
               <div className="flex items-center gap-4">
                 {friend.avatar ? (
-                  <img src={friend.avatar} alt={friend.name} className="w-12 h-12 rounded-full object-cover" />
+                  <Image
+                    src={friend.avatar}
+                    alt={friend.name}
+                    width={48}
+                    height={48}
+                    className="w-12 h-12 rounded-full object-cover"
+                  />
                 ) : (
                   <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
                     <span className="text-2xl font-bold text-white">
