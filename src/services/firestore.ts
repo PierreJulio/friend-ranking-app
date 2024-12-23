@@ -1,5 +1,5 @@
 import { db } from '../firebaseConfig';
-import { collection, addDoc, getDocs, query, where, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
 
 export interface Friend {
   id: string;
@@ -104,6 +104,60 @@ class FirestoreService {
       });
     } catch (error) {
       console.error('Error creating evaluation session:', error);
+      throw error;
+    }
+  }
+
+  async deleteFriend(userId: string, friendId: string) {
+    try {
+      // Supprimer l'ami
+      await deleteDoc(doc(db, 'friends', friendId));
+
+      // Supprimer tous les ratings associés à cet ami
+      const ratingsRef = collection(db, 'ratings');
+      const ratingsQuery = query(
+        ratingsRef,
+        where('userId', '==', userId),
+        where('friendId', '==', friendId)
+      );
+      const ratingsSnapshot = await getDocs(ratingsQuery);
+      
+      const deletionPromises = ratingsSnapshot.docs.map(doc => deleteDoc(doc.ref));
+      await Promise.all(deletionPromises);
+    } catch (error) {
+      console.error('Error deleting friend:', error);
+      throw error;
+    }
+  }
+
+  async resetFriendRatings(userId: string, friendId: string) {
+    try {
+      const ratingsRef = collection(db, 'ratings');
+      const ratingsQuery = query(
+        ratingsRef,
+        where('userId', '==', userId),
+        where('friendId', '==', friendId)
+      );
+      const ratingsSnapshot = await getDocs(ratingsQuery);
+      
+      const deletionPromises = ratingsSnapshot.docs.map(doc => deleteDoc(doc.ref));
+      await Promise.all(deletionPromises);
+    } catch (error) {
+      console.error('Error resetting friend ratings:', error);
+      throw error;
+    }
+  }
+
+  async resetAllFriendsRatings(userId: string) {
+    try {
+      const ratingsRef = collection(db, 'ratings');
+      const ratingsQuery = query(ratingsRef, where('userId', '==', userId));
+      const ratingsSnapshot = await getDocs(ratingsQuery);
+      
+      const deletionPromises = ratingsSnapshot.docs.map(doc => deleteDoc(doc.ref));
+      await Promise.all(deletionPromises);
+    } catch (error) {
+      console.error('Error resetting all friends ratings:', error);
       throw error;
     }
   }

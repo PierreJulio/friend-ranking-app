@@ -1,6 +1,6 @@
 import { useRouter } from 'next/router';
 import { FaExchangeAlt } from 'react-icons/fa';
-import { MdCategory, MdFormatListBulleted, MdInsights } from 'react-icons/md';
+import { MdCategory, MdFormatListBulleted, MdInsights, MdGroup } from 'react-icons/md';
 import styles from '../styles/GameModeSelection.module.css';
 
 export default function GameModeSelection() {
@@ -42,6 +42,15 @@ export default function GameModeSelection() {
       endColor: '#38ef7d',
       iconColor: '#11998e',
       icon: MdInsights
+    },
+    {
+      title: 'Gestion des Amis',
+      description: 'Gérez votre liste d\'amis et leurs scores',
+      path: '/app/friends-management',
+      startColor: '#FF8C00',
+      endColor: '#FFA500',
+      iconColor: '#FF8C00',
+      icon: MdGroup
     }
   ];
 
