@@ -52,30 +52,20 @@ export const selectNextFriendToRate = (
     .map((_, index) => index)
     .filter(index => !usedQuestionsForTrait.has(index));
 
-  if (availableQuestions.length > 0) {
-    const randomQuestionIndex = availableQuestions[Math.floor(Math.random() * availableQuestions.length)];
-    const question = traitQuestions[randomQuestionIndex];
-    
-    setUsedQuestions((prev: { [key: string]: Set<number> }) => ({
-      ...prev,
-      [currentTrait.id]: new Set([...(prev[currentTrait.id] || []), randomQuestionIndex])
-    }));
-    
-    setCurrentQuestion(question);
-    setCurrentRandomFriend(nextFriend.id);
-    return nextFriend.id;
-  }
-
   if (availableQuestions.length === 0) {
     usedQuestionsForTrait = new Set<number>();
     availableQuestions = traitQuestions.map((_, index) => index);
   }
 
   const questionIndex = availableQuestions[Math.floor(Math.random() * availableQuestions.length)];
-  const question = traitQuestions[questionIndex].replace('{friend}', nextFriend.name);
+  const questionTemplate = traitQuestions[questionIndex];
+  const question = questionTemplate.replace('{friend}', nextFriend.name); // Utiliser le nom au lieu de l'ID
 
-  usedQuestionsForTrait.add(questionIndex);
-  setUsedQuestions((prev: { [traitId: string]: Set<number> }) => ({ ...prev, [currentTrait.id]: usedQuestionsForTrait }));
+  setUsedQuestions((prev: { [traitId: string]: Set<number> }) => ({
+    ...prev,
+    [currentTrait.id]: new Set([...(prev[currentTrait.id] || []), questionIndex])
+  }));
+  
   setCurrentQuestion(question);
   setCurrentRandomFriend(nextFriend.id);
 
