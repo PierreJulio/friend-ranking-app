@@ -118,6 +118,7 @@ const ThemedMode: React.FC = () => {
     if (selectedTrait && friends.length > 0) {
       setStep('questionnaire');
       setCurrentQuestionIndex(0);
+      setCurrentQuestionRatings({});
     }
   };
 
@@ -150,7 +151,7 @@ const ThemedMode: React.FC = () => {
           }));
 
           // Passer à la question suivante
-          if (currentQuestionIndex < personalityTraits.find(t => t.id === selectedTrait)!.questions.length - 1) {
+          if (currentQuestionIndex < personalityTraits.find(t => t.id === selectedTrait)!.questions.themedMode.length - 1) {
             setCurrentQuestionIndex(prev => prev + 1);
             setCurrentQuestionRatings({}); // Réinitialiser les ratings pour la nouvelle question
           } else {
@@ -270,11 +271,11 @@ const ThemedMode: React.FC = () => {
         return (
           <ThemedQuestionnaire
             friends={friends}
-            trait={selectedTrait!}
+            trait={personalityTraits.find(t => t.id === selectedTrait)!}
             onRate={handleRating}
-            ratings={currentQuestionRatings} // Utiliser currentQuestionRatings au lieu de ratings
+            ratings={currentQuestionRatings}
             currentQuestion={currentQuestionIndex}
-            totalQuestions={personalityTraits.find(t => t.id === selectedTrait)!.questions.length}
+            totalQuestions={personalityTraits.find(t => t.id === selectedTrait)!.questions.themedMode.length} // Utiliser la longueur des questions du mode thématique
           />
         );
 

@@ -12,11 +12,15 @@ interface Friend {
 
 interface VersusQuestionnaireProps {
   friends: Friend[];
-  currentTrait: {
+  trait: {  // Assurez-vous que c'est 'trait' et non 'currentTrait'
     id: string;
     name: string;
     description: string;
-    questions: string[];
+    questions: {
+      friendRankingMode: string[];
+      versusMode: string[];
+      themedMode: string[];
+    };
   };
   onRate: (traitId: string, friendId: string, rating: number) => void;
   currentTraitIndex: number;
@@ -25,7 +29,7 @@ interface VersusQuestionnaireProps {
 
 const VersusQuestionnaire: React.FC<VersusQuestionnaireProps> = ({
   friends,
-  currentTrait,
+  trait,
   onRate,
   currentTraitIndex,
   totalTraits,
@@ -44,11 +48,12 @@ const VersusQuestionnaire: React.FC<VersusQuestionnaireProps> = ({
   useEffect(() => {
     // Réinitialiser l'index des questions quand on change de trait
     setQuestionIndex(0);
-    const shuffledQuestions = [...currentTrait.questions].sort(() => Math.random() - 0.5);
-    setCurrentQuestions(shuffledQuestions.slice(0, questionsPerTrait));
+    // Utiliser les questions du mode versus
+    const versusQuestions = trait.questions.versusMode;
+    setCurrentQuestions(versusQuestions.slice(0, questionsPerTrait));
     setScores({});
     setSelectedWinner(null);
-  }, [currentTrait]);
+  }, [trait]);
 
   const handleSelection = (selectedFriendId: string) => {
     if (selectedWinner) return;
@@ -69,8 +74,8 @@ const VersusQuestionnaire: React.FC<VersusQuestionnaireProps> = ({
           setSelectedWinner(null);
         } else {
           // À la fin des questions, mettre à jour les scores pour les deux amis
-          onRate(currentTrait.id, selectedFriendId, newScores[selectedFriendId] || 0);
-          onRate(currentTrait.id, otherFriendId, newScores[otherFriendId] || 0);
+          onRate(trait.id, selectedFriendId, newScores[selectedFriendId] || 0);
+          onRate(trait.id, otherFriendId, newScores[otherFriendId] || 0);
           setSelectedWinner(null);
           setScores({});
         }
@@ -82,7 +87,7 @@ const VersusQuestionnaire: React.FC<VersusQuestionnaireProps> = ({
     <div className="space-y-8">
       <div className="text-center space-y-4">
         <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600">
-          {currentTrait.name}
+          {trait.name}
         </h2>
         
         <div className="bg-white rounded-xl p-8 shadow-lg border border-gray-100">

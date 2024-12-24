@@ -195,7 +195,7 @@ const VersusMode: React.FC = () => {
       return (
         <VersusQuestionnaire
           friends={friends}
-          currentTrait={personalityTraits[currentTraitIndex]}
+          trait={personalityTraits[currentTraitIndex]} // Changez 'currentTrait' en 'trait'
           onRate={handleRating}
           currentTraitIndex={currentTraitIndex}
           totalTraits={personalityTraits.length}

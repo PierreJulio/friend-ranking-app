@@ -12,7 +12,16 @@ interface Friend {
 
 interface ThemedQuestionnaireProps {
   friends: Friend[];
-  trait: string;
+  trait: {
+    id: string;
+    name: string;
+    description: string;
+    questions: {
+      friendRankingMode: string[];
+      versusMode: string[];
+      themedMode: string[];
+    };
+  };
   onRate: (friendId: string, rating: number) => void;
   ratings: { [key: string]: number };
   currentQuestion: number;
@@ -27,8 +36,8 @@ const ThemedQuestionnaire: React.FC<ThemedQuestionnaireProps> = ({
   currentQuestion,
   totalQuestions
 }) => {
-  const currentTrait = personalityTraits.find(t => t.id === trait);
-  const questionTemplate = currentTrait?.questions[currentQuestion];
+  const currentTrait = personalityTraits.find(t => t.id === trait.id);
+  const questionTemplate = currentTrait?.questions.themedMode[currentQuestion];
   const allFriendsRated = friends.every(friend => Object.keys(ratings).includes(friend.id));
   const progress = (currentQuestion / totalQuestions) * 100;
 
