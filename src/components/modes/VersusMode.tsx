@@ -143,9 +143,7 @@ const VersusMode: React.FC = () => {
     }
   };
 
-  const handleShowResults = () => {
-    setShowResults(true);
-  };
+
 
   const handleNewComparison = () => {
     setCurrentTraitIndex(0);

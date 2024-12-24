@@ -11,13 +11,27 @@ type Ranking = {
   badges: string[];
 };
 
+type Friend = {
+  id: string;
+  name: string;
+  avatar: string | null;
+};
+
+type FriendRatings = {
+  [traitId: string]: {
+    [friendId: string]: number;
+  };
+};
+
+type SetFunction<T> = React.Dispatch<React.SetStateAction<T>>;
+
 export const selectNextFriendToRate = (
-  friends: any[],
-  friendRatings: any,
+  friends: Friend[],
+  friendRatings: FriendRatings,
   usedQuestions: { [key: string]: Set<number> },
-  setUsedQuestions: Function,
-  setCurrentQuestion: Function,
-  setCurrentRandomFriend: Function,
+  setUsedQuestions: SetFunction<{ [key: string]: Set<number> }>,
+  setCurrentQuestion: SetFunction<string>,
+  setCurrentRandomFriend: SetFunction<string | null>,
   currentTrait: {
     id: string;
     questions: {
@@ -69,10 +83,10 @@ export const selectNextFriendToRate = (
 };
 
 export async function calculateFinalRankings(
-  friends: { id: string; name: string; avatar: string | null }[],
-  friendRatings: { [traitId: string]: { [friendId: string]: number } },
-  setFinalRankings: React.Dispatch<React.SetStateAction<Ranking[] | null>>,
-  setCurrentTraitIndex: React.Dispatch<React.SetStateAction<number | null>>,
+  friends: Friend[],
+  friendRatings: FriendRatings,
+  setFinalRankings: SetFunction<Ranking[] | null>,
+  setCurrentTraitIndex: SetFunction<number | null>,
   userId: string
 ) {
   const finalScores: {
