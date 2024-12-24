@@ -11,33 +11,61 @@ type Ranking = {
   badges: string[];
 };
 
+type Friend = {
+  id: string;
+  name: string;
+  avatar: string | null;
+};
+
+type FriendRatings = {
+  [traitId: string]: {
+    [friendId: string]: number;
+  };
+};
+
+type SetFunction<T> = React.Dispatch<React.SetStateAction<T>>;
+
 export const selectNextFriendToRate = (
-  friends: { id: string; name: string; avatar: string | null }[],
-  friendRatings: { [traitId: string]: { [friendId: string]: number } },
-  usedQuestions: { [traitId: string]: Set<number> },
-  setUsedQuestions: (value: { [traitId: string]: Set<number> } | ((prev: { [traitId: string]: Set<number> }) => { [traitId: string]: Set<number> })) => void,
-  setCurrentQuestion: (value: string | null) => void,
-  setCurrentRandomFriend: (value: string | null) => void,
-  trait: { id: string; name: string; description: string; questions: string[] }
+  friends: Friend[],
+  friendRatings: FriendRatings,
+  usedQuestions: { [key: string]: Set<number> },
+  setUsedQuestions: SetFunction<{ [key: string]: Set<number> }>,
+  setCurrentQuestion: React.Dispatch<React.SetStateAction<string | null>>, // Updated type here
+  setCurrentRandomFriend: SetFunction<string | null>,
+  currentTrait: {
+    id: string;
+    questions: {
+      friendRankingMode: string[];
+      versusMode: string[];
+      themedMode: string[];
+    };
+  }
 ) => {
-  const friendsToRate = friends.filter(friend => !(friendRatings[trait.id]?.[friend.id]));
+  const friendsToRate = friends.filter(friend => !(friendRatings[currentTrait.id]?.[friend.id]));
   if (friendsToRate.length === 0) return null;
 
   const nextFriend = friendsToRate[Math.floor(Math.random() * friendsToRate.length)];
 
-  let used = usedQuestions[trait.id] || new Set<number>();
-  let availableQuestionIndices = trait.questions.map((_, index) => index).filter(index => !used.has(index));
+  let usedQuestionsForTrait = usedQuestions[currentTrait.id] || new Set<number>();
+  const traitQuestions = currentTrait.questions.friendRankingMode;
+  let availableQuestions = traitQuestions
+    .map((_, index) => index)
+    .filter(index => !usedQuestionsForTrait.has(index));
 
-  if (availableQuestionIndices.length === 0) {
-    used = new Set<number>();
-    availableQuestionIndices = trait.questions.map((_, index) => index);
+  if (availableQuestions.length === 0) {
+    usedQuestionsForTrait = new Set<number>();
+    availableQuestions = traitQuestions.map((_, index) => index);
   }
 
-  const questionIndex = availableQuestionIndices[Math.floor(Math.random() * availableQuestionIndices.length)];
-  const question = trait.questions[questionIndex].replace('{friend}', nextFriend.name);
+  const questionIndex = availableQuestions[Math.floor(Math.random() * availableQuestions.length)];
+  const questionTemplate = traitQuestions[questionIndex];
+  const question = questionTemplate.replace('{friend}', nextFriend.name); // Utiliser le nom au lieu de l'ID
 
-  used.add(questionIndex);
-  setUsedQuestions((prev: { [traitId: string]: Set<number> }) => ({ ...prev, [trait.id]: used }));
+  setUsedQuestions((prev: { [traitId: string]: Set<number> }) => ({
+    ...prev,
+    [currentTrait.id]: new Set([...(prev[currentTrait.id] || []), questionIndex])
+  }));
+  
   setCurrentQuestion(question);
   setCurrentRandomFriend(nextFriend.id);
 
@@ -45,10 +73,10 @@ export const selectNextFriendToRate = (
 };
 
 export async function calculateFinalRankings(
-  friends: { id: string; name: string; avatar: string | null }[],
-  friendRatings: { [traitId: string]: { [friendId: string]: number } },
-  setFinalRankings: React.Dispatch<React.SetStateAction<Ranking[] | null>>,
-  setCurrentTraitIndex: React.Dispatch<React.SetStateAction<number | null>>,
+  friends: Friend[],
+  friendRatings: FriendRatings,
+  setFinalRankings: SetFunction<Ranking[] | null>,
+  setCurrentTraitIndex: SetFunction<number | null>,
   userId: string
 ) {
   const finalScores: {

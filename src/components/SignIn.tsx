@@ -50,7 +50,7 @@ const SignIn = ({ onSignUpClick = () => {}, onAuthSuccess = () => {} }: Partial<
 
       <div className="space-y-4">
         <div className="relative">
-          <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+          <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
           <Input
             type="email"
             value={email}
@@ -61,7 +61,7 @@ const SignIn = ({ onSignUpClick = () => {}, onAuthSuccess = () => {} }: Partial<
         </div>
 
         <div className="relative">
-          <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
           <Input
             type="password"
             value={password}
@@ -81,7 +81,10 @@ const SignIn = ({ onSignUpClick = () => {}, onAuthSuccess = () => {} }: Partial<
 
       <p className="mt-4 text-sm text-center text-gray-600">
         Pas encore de compte ? 
-        <button onClick={onSignUpClick}>
+        <button 
+        onClick={onSignUpClick} 
+        className="text-blue-600 hover:underline ml-1 font-medium"
+        >
           S&apos;inscrire
         </button>
       </p>

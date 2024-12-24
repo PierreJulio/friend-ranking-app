@@ -7,13 +7,13 @@ import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card'
 import AddFriendForm from './AddFriendForm';
 import Questionnaire from './Questionnaire';
 import FinalRanking from './FinalRanking';
-import SignOut from './SignOut';
 import RankingHistory from './RankingHistory';
 import { selectNextFriendToRate, calculateFinalRankings } from './utils';
 import { Chart as ChartJS, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend } from 'chart.js';
-import { v4 as uuidv4 } from 'uuid';
-import { Users } from 'lucide-react';
+import { Users, ArrowLeft } from 'lucide-react';
+import { useRouter } from 'next/router';
 import personalityTraits from '../data/personalityTraits';
+import { firestoreService } from '../services/firestore';
 
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
 
@@ -50,6 +50,7 @@ const saveProgress = (
 };
 
 const FriendRankingApp = () => {
+  const router = useRouter();
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [friends, setFriends] = useState<Friend[]>([]);
   const [currentFriend, setCurrentFriend] = useState('');
@@ -115,23 +116,47 @@ const FriendRankingApp = () => {
     }
   };
 
-  const addFriend = () => {
+  const addFriend = async () => {
     if (currentFriend.trim() !== '') {
       const isDuplicate = friends.some(friend => friend.name.toLowerCase() === currentFriend.trim().toLowerCase());
       if (isDuplicate) {
-        alert(`L'ami "${currentFriend.trim()}" existe déjà.`);
+        alert(`L'ami "${currentFriend.trim()}" existe déjà dans la liste.`);
         return;
       }
 
-      const newFriend: Friend = {
-        id: uuidv4(),
-        name: currentFriend.trim(),
-        avatar: currentAvatar ? URL.createObjectURL(currentAvatar) : null
-      };
+      if (user) {
+        try {
+          const existingFriend = await firestoreService.getFriendByName(user.uid, currentFriend.trim());
+          if (existingFriend !== null) {
+            const newFriend: Friend = {
+              id: existingFriend.id,
+              name: existingFriend.name as string,
+              avatar: currentAvatar ? URL.createObjectURL(currentAvatar) : null
+            };
 
-      setFriends([...friends, newFriend]);
-      setCurrentFriend('');
-      setCurrentAvatar(null);
+            setFriends([...friends, newFriend]);
+            setCurrentFriend('');
+            setCurrentAvatar(null);
+            return;
+          }
+
+          const newFriendId = await firestoreService.addFriend(user.uid, {
+            name: currentFriend.trim(),
+          });
+
+          const newFriend: Friend = {
+            id: newFriendId,
+            name: currentFriend.trim(),
+            avatar: currentAvatar ? URL.createObjectURL(currentAvatar) : null
+          };
+
+          setFriends([...friends, newFriend]);
+          setCurrentFriend('');
+          setCurrentAvatar(null);
+        } catch (error) {
+          console.error('Erreur lors de l\'ajout de l\'ami:', error);
+        }
+      }
     }
   };
 
@@ -155,15 +180,33 @@ const FriendRankingApp = () => {
     setQuestionsAnswered(0); // Ajout de cette ligne
   };
 
-  const handleRating = (traitId: string, friendId: string, rating: number) => {
-    setFriendRatings(prev => ({
-      ...prev,
-      [traitId]: {
-        ...prev[traitId],
-        [friendId]: rating
+  const handleRating = async (traitId: string, friendId: string, rating: number) => {
+    try {
+      setFriendRatings(prev => {
+        const updatedRatings = { ...prev };
+        if (!updatedRatings[traitId]) {
+          updatedRatings[traitId] = {};
+        }
+        updatedRatings[traitId][friendId] = rating;
+        return updatedRatings;
+      });
+      setQuestionsAnswered(prev => prev + 1);
+
+      if (user) {
+        await firestoreService.addRating(user.uid, {
+          traitId,
+          score: rating,
+          friendId,
+          mode: 'standard'
+        });
       }
-    }));
-    setQuestionsAnswered(prev => prev + 1);
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+    }
+  };
+
+  const handleBackToMenu = () => {
+    router.push('/app');
   };
 
   const renderContent = () => {
@@ -235,7 +278,6 @@ const FriendRankingApp = () => {
           friends={friends}
           removeFriend={removeFriend}
           startQuestionnaire={startQuestionnaire}
-          userId={user.uid}
         />
       );
     }
@@ -245,13 +287,21 @@ const FriendRankingApp = () => {
     <div className="min-h-screen min-w-full flex items-center justify-center bg-gradient-to-r from-blue-500 to-purple-600 p-4">
       <Card className="w-full max-w-2xl shadow-2xl">
         <CardHeader className="bg-gradient-to-r from-blue-700 to-purple-700 text-white p-6 rounded-t-lg flex items-center justify-between">
-          <div className="flex items-center">
-            <Users className="mr-2" />
-            <CardTitle className="text-3xl">
-              Classement de mes Amis
-            </CardTitle>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={handleBackToMenu}
+              className="p-2 hover:bg-white/10 rounded-full transition-colors"
+              title="Retour au menu"
+            >
+              <ArrowLeft size={24} />
+            </button>
+            <div className="flex items-center">
+              <Users className="mr-2" />
+              <CardTitle className="text-3xl">
+                Classement de mes Amis
+              </CardTitle>
+            </div>
           </div>
-          {user && <SignOut className="ml-auto" />} {/* Utilisation de ml-auto pour aligner à droite */}
         </CardHeader>
         <CardContent className="p-8">
           {renderContent()}

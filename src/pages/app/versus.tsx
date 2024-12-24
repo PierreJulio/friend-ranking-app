@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
-import GameModeSelection from '../components/GameModeSelection';
+import VersusMode from '../../components/modes/VersusMode';
 
-export default function AppPage({ authenticated }: { authenticated: boolean }) {
+export default function VersusPage({ authenticated }: { authenticated: boolean }) {
   const router = useRouter();
 
   useEffect(() => {
@@ -15,5 +15,5 @@ export default function AppPage({ authenticated }: { authenticated: boolean }) {
     return null;
   }
 
-  return <GameModeSelection />;
+  return <VersusMode />;
 }

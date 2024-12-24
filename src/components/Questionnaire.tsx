@@ -7,12 +7,21 @@ import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 
 interface QuestionnaireProps {
-  trait: { id: string; name: string; description: string; questions: string[] };
+  trait: {
+    id: string;
+    name: string;
+    description: string;
+    questions: {
+      friendRankingMode: string[];
+      versusMode: string[];
+      themedMode: string[];
+    };
+  };
   progress: number;
   currentQuestion: string | null;
   currentRandomFriend: string | null;
   handleRating: (traitId: string, friendId: string, rating: number) => void;
-  selectNextFriendToRate: (trait: { id: string; name: string; description: string; questions: string[] }) => string | null;
+  selectNextFriendToRate: (trait: { id: string; name: string; description: string; questions: { friendRankingMode: string[]; versusMode: string[]; themedMode: string[]; } }) => string | null;
   calculateFinalRankings: () => void;
   currentTraitIndex: number | null;
   setCurrentTraitIndex: (index: number | null) => void;
@@ -75,7 +84,9 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({
             animate={{ opacity: 1 }}
             className="space-y-6"
           >
-            <p className="text-lg font-medium text-gray-800">{currentQuestion}</p>
+            <p className="text-lg font-medium text-gray-800">
+              {currentQuestion.replace('{friend}', currentRandomFriend || '___')}
+            </p>
             
             <div className="flex flex-col space-y-2">
               {[1, 2, 3, 4, 5].map((rating) => (
