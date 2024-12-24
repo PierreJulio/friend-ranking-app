@@ -30,7 +30,7 @@ export const selectNextFriendToRate = (
   friendRatings: FriendRatings,
   usedQuestions: { [key: string]: Set<number> },
   setUsedQuestions: SetFunction<{ [key: string]: Set<number> }>,
-  setCurrentQuestion: SetFunction<string>,
+  setCurrentQuestion: React.Dispatch<React.SetStateAction<string | null>>, // Updated type here
   setCurrentRandomFriend: SetFunction<string | null>,
   currentTrait: {
     id: string;
