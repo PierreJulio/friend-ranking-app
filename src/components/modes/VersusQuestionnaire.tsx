@@ -42,16 +42,16 @@ const VersusQuestionnaire: React.FC<VersusQuestionnaireProps> = ({
   const progress = (currentQuestionNumber / totalQuestions) * 100;
 
   useEffect(() => {
-    // Sélectionner 3 questions aléatoires uniques
+    // Réinitialiser l'index des questions quand on change de trait
+    setQuestionIndex(0);
     const shuffledQuestions = [...currentTrait.questions].sort(() => Math.random() - 0.5);
     setCurrentQuestions(shuffledQuestions.slice(0, questionsPerTrait));
-    setQuestionIndex(0);
     setScores({});
     setSelectedWinner(null);
   }, [currentTrait]);
 
   const handleSelection = (selectedFriendId: string) => {
-    if (selectedWinner) return; // Empêcher la sélection multiple
+    if (selectedWinner) return;
 
     setSelectedWinner(selectedFriendId);
     const otherFriendId = friends.find(f => f.id !== selectedFriendId)?.id;
@@ -63,21 +63,16 @@ const VersusQuestionnaire: React.FC<VersusQuestionnaireProps> = ({
       };
       setScores(newScores);
 
-      // Attendre un moment pour montrer la sélection
       setTimeout(() => {
         if (questionIndex < questionsPerTrait - 1) {
           setQuestionIndex(prev => prev + 1);
           setSelectedWinner(null);
         } else {
-          // Fin des questions pour ce trait
-          const winningFriend = Object.entries(newScores).reduce((a, b) => 
-            b[1] > (a[1] || 0) ? b : a
-          )[0];
-          
-          // Mettre à jour les scores finals
-          onRate(currentTrait.id, winningFriend, newScores[winningFriend] || 0);
-          onRate(currentTrait.id, otherFriendId, 
-            (newScores[otherFriendId] || 0));
+          // À la fin des questions, mettre à jour les scores pour les deux amis
+          onRate(currentTrait.id, selectedFriendId, newScores[selectedFriendId] || 0);
+          onRate(currentTrait.id, otherFriendId, newScores[otherFriendId] || 0);
+          setSelectedWinner(null);
+          setScores({});
         }
       }, 500);
     }

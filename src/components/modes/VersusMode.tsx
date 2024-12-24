@@ -116,21 +116,28 @@ const VersusMode: React.FC = () => {
         });
       }
 
-      // Mettre à jour l'état local
       setFriendRatings(prev => {
         const updatedRatings = { ...prev };
         if (!updatedRatings[trait]) {
           updatedRatings[trait] = {};
         }
         updatedRatings[trait][friendId] = rating;
+
+        const ratingsForTrait = updatedRatings[trait];
+        if (Object.keys(ratingsForTrait).length === 2) {
+          // Utiliser requestAnimationFrame pour une transition plus fluide
+          requestAnimationFrame(() => {
+            if (currentTraitIndex !== null && currentTraitIndex < personalityTraits.length - 1) {
+              setCurrentTraitIndex(currentTraitIndex + 1);
+            } else {
+              setShowResults(true);
+            }
+          });
+        }
+
         return updatedRatings;
       });
 
-      // Continuer avec la logique existante
-      if (currentTraitIndex !== null && currentTraitIndex < personalityTraits.length - 1) {
-      } else {
-        handleShowResults();
-      }
     } catch (error) {
       console.error('Erreur:', error);
     }
