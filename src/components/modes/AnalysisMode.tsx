@@ -3,7 +3,7 @@ import { Box, Paper, Typography, Grid, CircularProgress, Chip, Select, MenuItem,
 import { ArrowLeft, Target, Lightbulb, ThumbsUp, Star, X, ListChecks, Play, Shuffle } from 'lucide-react';
 import { styled } from '@mui/material/styles';
 import { useRouter } from 'next/router';
-import { db } from '../../firebaseConfig';
+import { db, auth } from '../../firebaseConfig';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import personalityTraits from '../../data/personalityTraits';
 import recommendations from '../../data/recommendations';
@@ -86,15 +86,39 @@ const AnalysisMode: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showActivityModal, setShowActivityModal] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState<ImprovementActivity | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // Obtenir l'ID de l'utilisateur connecté
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        setUserId(user.uid);
+      } else {
+        setUserId(null);
+        router.push('/'); // Rediriger vers la page de connexion si non authentifié
+      }
+    });
+
+    return () => unsubscribe();
+  }, [router]);
 
   useEffect(() => {
     const loadFriendsWithEvaluations = async () => {
+      // Vérifier si l'utilisateur est connecté
+      if (!userId) {
+        setFriendsList([]);
+        setLoading(false);
+        return;
+      }
+      
       try {
         setLoading(true);
         console.log("Chargement des évaluations...");
 
+        // Filtrer les amis par userId (seulement ceux créés par l'utilisateur connecté)
         const friendsRef = collection(db, 'friends');
-        const friendsSnapshot = await getDocs(friendsRef);
+        const friendsQuery = query(friendsRef, where('userId', '==', userId));
+        const friendsSnapshot = await getDocs(friendsQuery);
 
         const friendsMap = new Map();
 
@@ -108,8 +132,10 @@ const AnalysisMode: React.FC = () => {
           });
         });
 
+        // Récupérer les évaluations pour ces amis spécifiques
         const ratingsRef = collection(db, 'ratings');
-        const ratingsSnapshot = await getDocs(ratingsRef);
+        const ratingsQuery = query(ratingsRef, where('userId', '==', userId));
+        const ratingsSnapshot = await getDocs(ratingsQuery);
 
         ratingsSnapshot.docs.forEach(doc => {
           const data = doc.data();
@@ -133,16 +159,21 @@ const AnalysisMode: React.FC = () => {
     };
 
     loadFriendsWithEvaluations();
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     const analyzeData = async () => {
-      if (!selectedFriend) return;
+      if (!selectedFriend || !userId) return;
 
       setLoading(true);
       try {
         const ratingsRef = collection(db, 'ratings');
-        const q = query(ratingsRef, where('friendId', '==', selectedFriend));
+        // Filtrer les évaluations par friendId ET userId
+        const q = query(
+          ratingsRef, 
+          where('friendId', '==', selectedFriend),
+          where('userId', '==', userId)
+        );
         const snapshot = await getDocs(q);
 
         const traitScores: { [key: string]: number[] } = {};
@@ -193,7 +224,7 @@ const AnalysisMode: React.FC = () => {
     };
 
     analyzeData();
-  }, [selectedFriend]);
+  }, [selectedFriend, userId]);
 
   const generateRecommendations = (weaknesses: string[], improved: string[]): Array<{ recommendation: string; examples: string[] }> => {
     let recommendationsList: Array<{ recommendation: string; examples: string[] }> = [];
@@ -429,30 +460,48 @@ const AnalysisMode: React.FC = () => {
         </Box>
 
         <Box sx={{ p: 4 }}>
+          {/* Message si aucun ami n'est trouvé */}
+          {!loading && friendsList.length === 0 && (
+            <Box sx={{ textAlign: 'center', p: 4 }}>
+              <Typography variant="h6" color="text.secondary">
+                Vous n&apos;avez pas encore évalué d&apos;amis. Veuillez d&apos;abord ajouter et évaluer des amis.
+              </Typography>
+              <Button 
+                variant="contained"
+                onClick={() => router.push('/app')}
+                sx={{ mt: 2 }}
+              >
+                Retour à l&apos;accueil
+              </Button>
+            </Box>
+          )}
+
           {/* Sélecteur d'ami */}
-          <FormControl fullWidth sx={{ mb: 4 }}>
-            <Select
-              value={selectedFriend || ''}
-              onChange={(e) => setSelectedFriend(e.target.value)}
-              displayEmpty
-              sx={{
-                borderRadius: '12px',
-                height: '56px'
-              }}
-            >
-              <MenuItem disabled value="">
-                <em>Sélectionnez un ami à analyser</em>
-              </MenuItem>
-              {friendsList.map((friend) => (
-                <MenuItem key={friend.id} value={friend.id}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Avatar>{friend.name.charAt(0)}</Avatar>
-                    <Typography>{friend.name}</Typography>
-                  </Box>
+          {friendsList.length > 0 && (
+            <FormControl fullWidth sx={{ mb: 4 }}>
+              <Select
+                value={selectedFriend || ''}
+                onChange={(e) => setSelectedFriend(e.target.value)}
+                displayEmpty
+                sx={{
+                  borderRadius: '12px',
+                  height: '56px'
+                }}
+              >
+                <MenuItem disabled value="">
+                  <em>Sélectionnez un ami à analyser</em>
                 </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+                {friendsList.map((friend) => (
+                  <MenuItem key={friend.id} value={friend.id}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Avatar>{friend.name.charAt(0)}</Avatar>
+                      <Typography>{friend.name}</Typography>
+                    </Box>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
 
           {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
