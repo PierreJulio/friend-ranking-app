@@ -464,14 +464,14 @@ const AnalysisMode: React.FC = () => {
           {!loading && friendsList.length === 0 && (
             <Box sx={{ textAlign: 'center', p: 4 }}>
               <Typography variant="h6" color="text.secondary">
-                Vous n'avez pas encore évalué d'amis. Veuillez d'abord ajouter et évaluer des amis.
+                Vous n&apos;avez pas encore évalué d&apos;amis. Veuillez d&apos;abord ajouter et évaluer des amis.
               </Typography>
               <Button 
                 variant="contained"
                 onClick={() => router.push('/app')}
                 sx={{ mt: 2 }}
               >
-                Retour à l'accueil
+                Retour à l&apos;accueil
               </Button>
             </Box>
           )}
